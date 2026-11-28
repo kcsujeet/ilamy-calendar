@@ -111,7 +111,7 @@ test.describe('New York, the day the clocks go forward (9 Mar 2025)', () => {
 		await context.close()
 	})
 
-	test('ticking All day on the month cell keeps End Date on the day and saves one whole day', async ({
+	test('clicking the month cell opens All day checked (D11), keeps End Date on the day and saves one whole day', async ({
 		browser,
 	}) => {
 		const { context, page } = await newYorkPage(browser)
@@ -124,7 +124,7 @@ test.describe('New York, the day the clocks go forward (9 Mar 2025)', () => {
 		const month = new MonthGrid(page)
 		await month.cellOn('2025-03-09').click()
 		await formDialog(page).waitFor()
-		await allDayBox(page).click()
+		await expect(allDayBox(page)).toBeChecked()
 		await expect(dateButtons(page).nth(0)).toHaveText('Mar 9, 2025')
 		await expect(dateButtons(page).nth(1)).toHaveText('Mar 9, 2025')
 		await saveForm(page)
@@ -198,6 +198,7 @@ test.describe('New York, the day the clocks go forward (9 Mar 2025)', () => {
 		const month = new MonthGrid(page)
 		await month.cellOn('2025-03-09').click()
 		await formDialog(page).waitFor()
+		await allDayBox(page).click()
 		await pickTime(page, 'start', '9:00 AM')
 		await saveForm(page)
 		const row = await lastRow(month)
@@ -220,6 +221,7 @@ test.describe('New York, the week the clocks go back, in the year view', () => {
 			view: 'year',
 			timezone: NEW_YORK,
 			date: '2025-11-01T12:00:00.000Z',
+			plugins: ['year'],
 			settings: { externalToolbar: 'true' },
 		})
 		await new YearGrid(page).monthCards.first().waitFor()
@@ -250,6 +252,7 @@ test.describe('New York, a time the clocks go back over, picked in winter', () =
 		const month = new MonthGrid(page)
 		await month.cellOn('2025-11-02').click()
 		await formDialog(page).waitFor()
+		await allDayBox(page).click()
 		await pickTime(page, 'start', '1:30 AM')
 		await saveForm(page)
 		const row = await lastRow(month)

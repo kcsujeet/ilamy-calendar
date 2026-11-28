@@ -21,6 +21,7 @@ const openTitlePicker = async (
 		view: options.view,
 		timezone: NEW_YORK,
 		date: options.date,
+		plugins: options.view === 'year' ? ['year'] : undefined,
 		settings: { externalToolbar: 'true' },
 	})
 	await page.getByTestId('calendar-title').click()

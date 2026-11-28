@@ -13,36 +13,64 @@ Get started with ilamy Calendar by installing it via your preferred package mana
 <Tabs>
   <TabItem label="npm">
     ```bash
-    npm install @ilamy/calendar dayjs
+    npm install @ilamy/calendar
     ```
   </TabItem>
   <TabItem label="pnpm">
     ```bash
-    pnpm add @ilamy/calendar dayjs
+    pnpm add @ilamy/calendar
     ```
   </TabItem>
   <TabItem label="yarn">
     ```bash
-    yarn add @ilamy/calendar dayjs
+    yarn add @ilamy/calendar
     ```
   </TabItem>
   <TabItem label="bun">
     ```bash
-    bun add @ilamy/calendar dayjs
+    bun add @ilamy/calendar
     ```
   </TabItem>
 </Tabs>
 
-`dayjs` is included above because it is a peer dependency (see below).
+No external date library (`dayjs`, `moment`, `date-fns`), drag-and-drop package (`@dnd-kit/*`), or UI component library (`@radix-ui/*`, `@mui/material`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`, `tailwindcss`) is required — v4.0 uses only `temporal-polyfill` and internal `preact` (never leaked into public `.d.ts` or headless `@ilamy/calendar`), running on TC39 Temporal and `Intl.DateTimeFormat` with plain ISO 8601 strings and `Date` inputs.
+
+## Stylesheet (`@ilamy/calendar/styles.css`)
+
+Import the layered stylesheet once in your app entry (works standalone with **zero Tailwind installed**, and no `@source` directive is needed):
+
+```ts
+import '@ilamy/calendar/styles.css';
+```
+
+If your app uses Tailwind CSS v4, import `@ilamy/calendar/styles.css` **before** `@import 'tailwindcss';` so Tailwind utilities sit in a higher cascade layer and shadcn variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`) are inherited automatically:
+
+```css title="globals.css"
+@import '@ilamy/calendar/styles.css';
+@import 'tailwindcss';
+```
+
+For completely custom or unstyled builds, import only the structural layout layer (`@ilamy/calendar/styles/base.css`) or pass `unstyled` with `slotProps`. `@ilamy/calendar/styles.css` works standalone with zero framework lock-in, and pairs directly with Tailwind, StyleX, or MUI tokens via CSS custom properties and `slotProps`. See [Styling & Themes](/docs/customization/styling).
 
 ## Peer dependencies
 
-ilamy Calendar declares a few packages as **peer dependencies** so your app and the calendar share a single copy. This matters most for `dayjs`: the calendar's API uses `dayjs` objects (e.g. `CalendarEvent.start`), and date labels are localized through your app's `dayjs` instance. A shared copy means the `dayjs` locale you import in your app also applies to the calendar (no extra wiring).
+`temporal-polyfill` and internal `preact` are the only runtime dependencies (`preact` stays internal and never appears in public `.d.ts`). Zero UI component libraries (`@radix-ui/*`), drag-and-drop libraries (`@dnd-kit/*`), MUI components, icon packs (`lucide-react`), or Tailwind packages are bundled.
 
-- `dayjs` (`^1.11.23`)
-- `react` and `react-dom` (`^19.2.0`)
-- `tailwindcss` (`^4.2.2`) and `tailwindcss-animate` (`^1.0.7`)
+All framework, feature, and styling peer dependencies are **optional** — install only what you use:
 
-The install command above already adds `dayjs`. Your React and Tailwind setup typically provides the rest (`react`, `react-dom`, `tailwindcss`, `tailwindcss-animate`); install any that are missing.
+### Frameworks
+- `react` and `react-dom` (`^19.2.0`) — for `@ilamy/calendar/react` (React 19)
+- `vue` (`^3.5.0`) — for `@ilamy/calendar/vue` (Vue 3.5+, zero React dependency)
+- `svelte` (`^5.0.0`) — for `@ilamy/calendar/svelte` (Svelte 5+, zero React dependency)
+- `solid-js` (`^2.0.0`) — for `@ilamy/calendar/solid` (Solid 2.0+, zero React dependency)
+- `@angular/core` (`^22.0.0`) — for `@ilamy/calendar/angular` (Angular 22+, zero React dependency)
 
-To localize date labels, set the `locale` prop and import the matching `dayjs` locale once in your app. See [Internationalization](/docs/features/internationalization).
+### Optional Features
+- `rrule` — optional peer dependency needed only when using `@ilamy/calendar/plugins/recurrence`.
+
+### Styling
+- `tailwindcss` — genuinely optional; `@ilamy/calendar/styles.css` renders standalone with zero Tailwind
+
+All five framework adapters share the same internal renderer, zero-dependency pointer drag/resize engine, and `--ilamy-*` CSS token layer with zero framework lock-in. The headless core (`@ilamy/calendar`) requires zero framework peer dependencies. See [Multi-Framework Support](/docs/frameworks/overview) for guides across all frameworks.
+
+To localize date labels, set the `locale` prop to any BCP 47 locale tag (such as `"fr"`, `"de"`, `"ja"`, `"ar"`). No locale imports are needed. See [Internationalization](/docs/features/internationalization).

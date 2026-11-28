@@ -60,7 +60,7 @@ test.describe('month view', () => {
 		await gotoScenario(page, {
 			scenario: 'across-hidden-days',
 			view: 'month',
-			settings: { hiddenDays: 'wednesday' },
+			settings: { hiddenDays: 'wednesday', nowIndicator: 'true' },
 		})
 		const month = new MonthGrid(page)
 
@@ -175,7 +175,7 @@ test.describe('week view', () => {
 		})
 		const grid = new TimeGrid(page)
 
-		const bar = page.getByTestId('horizontal-event-mid-1')
+		const bar = page.getByTestId('calendar-event-mid-1')
 		await expect(bar).toHaveCount(1)
 		await expectBarSpans(bar, grid.dayColumns.first(), 2)
 	})
@@ -268,10 +268,10 @@ test.describe('resource views', () => {
 			scenario: 'resources',
 			view: 'week',
 			orientation: 'horizontal',
-			settings: { hiddenDays: 'wednesday' },
+			settings: { hiddenDays: 'wednesday', nowIndicator: 'true' },
 		})
 
-		const bar = page.getByTestId('horizontal-event-res-4')
+		const bar = page.getByTestId('calendar-event-res-4')
 		const column = cellsStartingOn(page, '2025-03-13T14:00').first()
 		await expect(bar).toHaveCount(1)
 		// Polled: the bar animates in, and a slow runner can measure it mid-way.
@@ -296,7 +296,7 @@ test.describe('resource views', () => {
 			orientation: 'horizontal',
 			now: thursdayNow,
 			date: thursdayNow,
-			settings: { hiddenDays: 'wednesday' },
+			settings: { hiddenDays: 'wednesday', nowIndicator: 'true' },
 		})
 
 		const line = page.getByTestId('current-time-indicator').first()

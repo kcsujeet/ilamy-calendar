@@ -1,4 +1,4 @@
-import { Checkbox } from '@ilamy/ui/components/checkbox'
+import { Checkbox } from '../ui/checkbox'
 import { useId } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
 

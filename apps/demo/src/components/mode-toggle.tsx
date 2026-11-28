@@ -1,41 +1,37 @@
-import { Button } from '@ilamy/ui/components/button'
+import { Button } from '@ilamy/playground'
 import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-type Theme = 'dark' | 'light' | 'system'
-const defaultTheme: Theme = 'dark'
+type Theme = 'dark' | 'light'
 const storageKey = 'ilamy-calendar-theme'
 
+const readInitialTheme = (): Theme => {
+	if (typeof window === 'undefined') return 'light'
+	const saved = localStorage.getItem(storageKey)
+	if (saved === 'dark' || saved === 'light') return saved
+	return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+}
+
 export function ModeToggle() {
-	const [theme, setTheme] = useState<Theme>(() => defaultTheme)
+	const [theme, setTheme] = useState<Theme>(readInitialTheme)
 
 	useEffect(() => {
-		const saved = localStorage.getItem(storageKey) as Theme
-		if (saved) {
-			setTheme(saved)
-		}
-	}, [])
+		const root = window.document.documentElement
+		root.classList.remove('light', 'dark')
+		root.classList.add(theme)
+	}, [theme])
 
 	const toggleTheme = () => {
-		const root = window.document.documentElement
 		const nextTheme: Theme = theme === 'dark' ? 'light' : 'dark'
-		root.classList.remove('light', 'dark')
-		root.classList.add(nextTheme)
-
 		localStorage.setItem(storageKey, nextTheme)
 		setTheme(nextTheme)
 	}
 
-	// Determine the icon to display based on current theme
 	const getThemeIcon = () => {
-		switch (theme) {
-			case 'light':
-				return <Sun className="h-4 w-4 transition-all text-amber-500" />
-			case 'dark':
-				return <Moon className="h-4 w-4 transition-all text-indigo-400" />
-			default:
-				return <Sun className="h-4 w-4 transition-all text-amber-500" />
+		if (theme === 'dark') {
+			return <Sun className="h-4 w-4 transition-all text-amber-500" />
 		}
+		return <Moon className="h-4 w-4 transition-all text-indigo-400" />
 	}
 
 	return (

@@ -1,0 +1,1184 @@
+@layer ilamy.base {
+	/*
+	 * Core design tokens & structural layout.
+	 * Automatically bridge shadcn/Tailwind CSS variables when present on the page,
+	 * with clean light/dark fallbacks so the calendar works with zero Tailwind.
+	 */
+	:where([data-ilamy-root]) {
+		--ilamy-bg-light: #ffffff;
+		--ilamy-bg-dark: #09090b;
+		--ilamy-fg-light: #09090b;
+		--ilamy-fg-dark: #fafafa;
+		--ilamy-surface-light: #f8fafc;
+		--ilamy-surface-dark: #18181b;
+		--ilamy-muted-light: #f4f4f5;
+		--ilamy-muted-dark: #27272a;
+		--ilamy-muted-fg-light: #71717a;
+		--ilamy-muted-fg-dark: #a1a1aa;
+		--ilamy-border-light: #e4e4e7;
+		--ilamy-border-dark: #27272a;
+		--ilamy-primary-light: #18181b;
+		--ilamy-primary-dark: #fafafa;
+		--ilamy-primary-fg-light: #fafafa;
+		--ilamy-primary-fg-dark: #18181b;
+		--ilamy-danger-light: #ef4444;
+		--ilamy-danger-dark: #f87171;
+		--ilamy-scrollbar-thumb-light: #a1a1aa;
+		--ilamy-scrollbar-thumb-dark: #52525b;
+
+		--ilamy-bg: var(--background, var(--ilamy-bg-light));
+		--ilamy-fg: var(--foreground, var(--ilamy-fg-light));
+		--ilamy-surface: var(--card, var(--ilamy-surface-light));
+		--ilamy-muted: var(--muted, var(--ilamy-muted-light));
+		--ilamy-muted-fg: var(--muted-foreground, var(--ilamy-muted-fg-light));
+		--ilamy-border: var(--border, var(--ilamy-border-light));
+		--ilamy-primary: var(--primary, var(--ilamy-primary-light));
+		--ilamy-primary-fg: var(--primary-foreground, var(--ilamy-primary-fg-light));
+		--ilamy-danger: var(--destructive, var(--ilamy-danger-light));
+		--ilamy-radius: var(--radius, 0.5rem);
+		--ilamy-font: var(--font-sans, inherit);
+		--ilamy-scrollbar-thumb: var(--ilamy-scrollbar-thumb-light);
+
+		color-scheme: light dark;
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+		box-sizing: border-box;
+	}
+
+	:where([data-ilamy-root]) :where([data-ilamy-slot], [data-ilamy-part], [data-ilamy-part] *) {
+		box-sizing: border-box;
+	}
+
+	:where([data-ilamy-root]) :where(button, input, select, textarea) {
+		box-sizing: border-box;
+		font: inherit;
+		margin: 0;
+	}
+
+	:where([data-ilamy-root]) :where(button) {
+		background: transparent;
+		border: 0;
+		padding: 0;
+		color: inherit;
+	}
+
+	:where([data-ilamy-root][data-unstyled='true']) :where(button, input, select, textarea) {
+		background: transparent;
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+		color: inherit;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:where([data-ilamy-root]:not([data-color-scheme='light'])) {
+			--ilamy-bg: var(--background, var(--ilamy-bg-dark));
+			--ilamy-fg: var(--foreground, var(--ilamy-fg-dark));
+			--ilamy-surface: var(--card, var(--ilamy-surface-dark));
+			--ilamy-muted: var(--muted, var(--ilamy-muted-dark));
+			--ilamy-muted-fg: var(--muted-foreground, var(--ilamy-muted-fg-dark));
+			--ilamy-border: var(--border, var(--ilamy-border-dark));
+			--ilamy-primary: var(--primary, var(--ilamy-primary-dark));
+			--ilamy-primary-fg: var(--primary-foreground, var(--ilamy-primary-fg-dark));
+			--ilamy-danger: var(--destructive, var(--ilamy-danger-dark));
+			--ilamy-scrollbar-thumb: var(--ilamy-scrollbar-thumb-dark);
+		}
+	}
+
+	:where(.dark [data-ilamy-root], [data-ilamy-root][data-color-scheme='dark']) {
+		color-scheme: dark;
+	}
+
+	:where([data-ilamy-root][data-color-scheme='light']) {
+		color-scheme: light;
+	}
+
+	@supports (color: light-dark(white, black)) {
+		:where([data-ilamy-root]) {
+			--ilamy-bg: var(--background, light-dark(var(--ilamy-bg-light), var(--ilamy-bg-dark)));
+			--ilamy-fg: var(--foreground, light-dark(var(--ilamy-fg-light), var(--ilamy-fg-dark)));
+			--ilamy-surface: var(--card, light-dark(var(--ilamy-surface-light), var(--ilamy-surface-dark)));
+			--ilamy-muted: var(--muted, light-dark(var(--ilamy-muted-light), var(--ilamy-muted-dark)));
+			--ilamy-muted-fg: var(--muted-foreground, light-dark(var(--ilamy-muted-fg-light), var(--ilamy-muted-fg-dark)));
+			--ilamy-border: var(--border, light-dark(var(--ilamy-border-light), var(--ilamy-border-dark)));
+			--ilamy-primary: var(--primary, light-dark(var(--ilamy-primary-light), var(--ilamy-primary-dark)));
+			--ilamy-primary-fg: var(--primary-foreground, light-dark(var(--ilamy-primary-fg-light), var(--ilamy-primary-fg-dark)));
+			--ilamy-danger: var(--destructive, light-dark(var(--ilamy-danger-light), var(--ilamy-danger-dark)));
+			--ilamy-scrollbar-thumb: light-dark(var(--ilamy-scrollbar-thumb-light), var(--ilamy-scrollbar-thumb-dark));
+		}
+	}
+
+	/* Screen-reader live announcements */
+	:where([data-ilamy-sr-only]) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	/* Header & Toolbar structure */
+	:where([data-ilamy-slot='header']) {
+		container-type: inline-size;
+		container-name: ilamy-header;
+		width: 100%;
+		flex-shrink: 0;
+		padding: 0.25rem;
+		margin-block-end: 0.25rem;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	:where([data-ilamy-slot='header'] > [data-ilamy-slot-host='header'] > *) {
+		flex: 1 1 100%;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-slot='toolbar']) {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.5rem;
+	}
+
+	:where([data-ilamy-slot='nav-group']) {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-slot='actions-group']) {
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-slot='nav-button'][data-part='title']) {
+		min-width: 0;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		justify-content: flex-start;
+	}
+
+	:where([data-ilamy-slot='arrow-group']) {
+		display: inline-flex;
+		align-items: center;
+		flex-shrink: 0;
+		height: 2.25rem;
+		overflow: hidden;
+	}
+
+	:where([data-ilamy-slot='nav-button']) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		height: 2.25rem;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	:where([data-ilamy-slot='arrow-group']) > :where([data-ilamy-slot='nav-button']) {
+		height: 100%;
+	}
+
+	:where([data-ilamy-slot='view-switcher']) {
+		display: none;
+		align-items: center;
+		height: 2.25rem;
+		gap: 0.125rem;
+	}
+
+	:where([data-ilamy-part='view-menu']) {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+	}
+
+	@container ilamy-header (min-width: 52rem) {
+		:where([data-ilamy-slot='toolbar']) {
+			flex-direction: row;
+			flex-wrap: nowrap;
+			align-items: center;
+			justify-content: space-between;
+		}
+		:where([data-ilamy-slot='nav-group']) {
+			flex-wrap: nowrap;
+		}
+		:where([data-ilamy-slot='view-switcher']) {
+			display: inline-flex;
+		}
+		:where([data-ilamy-part='view-menu']) {
+			display: none;
+		}
+	}
+
+	@container ilamy-header (max-width: 36rem) {
+		:where([data-ilamy-part='new-btn-label']) {
+			display: none;
+		}
+	}
+
+	:where([data-ilamy-slot='view-button']) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	:where([data-ilamy-part='view-menu-dropdown']) {
+		position: absolute;
+		inset-block-start: calc(100% + 0.25rem);
+		inset-inline-end: 0;
+		z-index: 60;
+		min-width: 9rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	:where([data-ilamy-part='view-menu-item']) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		cursor: pointer;
+		text-align: left;
+	}
+
+	/* Calendar body & independent scroll viewport */
+	:where([data-ilamy-slot='grid']) {
+		container-type: inline-size;
+		container-name: ilamy-grid;
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 0%;
+		min-height: 0;
+		width: 100%;
+		overflow: clip;
+		border-radius: 0;
+	}
+
+	:where([data-ilamy-part='time-grid-scroll-x']) {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 0%;
+		min-height: 0;
+		width: 100%;
+		overflow-x: auto;
+		overflow-y: hidden;
+	}
+
+	:where([data-ilamy-part='time-grid-regular-frame']) {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 0%;
+		min-height: 0;
+		width: 100%;
+	}
+
+	:where([data-ilamy-part='time-grid-scroll-frame']) {
+		display: flex;
+		flex-direction: column;
+		min-height: 100%;
+		min-width: 100%;
+		width: 100%;
+	}
+
+	:where([data-ilamy-part='time-grid-scroll-frame']) > :where([data-ilamy-slot='grid-scroll']) {
+		overflow-x: visible;
+		overflow-y: auto;
+	}
+
+	:where([data-ilamy-slot='grid-scroll']) {
+		flex: 1 1 0%;
+		min-height: 0;
+		width: 100%;
+		overflow: auto;
+		position: relative;
+		scrollbar-width: thin;
+		scrollbar-color: var(--ilamy-scrollbar-thumb) transparent;
+	}
+
+	@supports not (scrollbar-color: auto) {
+		:where([data-ilamy-slot='grid-scroll']) {
+			scrollbar-width: auto;
+		}
+
+		:where([data-ilamy-slot='grid-scroll'])::-webkit-scrollbar {
+			width: 8px;
+			height: 8px;
+		}
+
+		:where([data-ilamy-slot='grid-scroll'])::-webkit-scrollbar-thumb {
+			background: var(--ilamy-scrollbar-thumb);
+			border-radius: 9999px;
+		}
+
+		:where([data-ilamy-slot='grid-scroll'])::-webkit-scrollbar-track {
+			background: transparent;
+		}
+	}
+
+	/* Month / Day / Resource grid structural rows */
+	:where([data-ilamy-slot='month-header']) {
+		display: flex;
+		width: 100%;
+		flex-shrink: 0;
+	}
+
+	:where([data-ilamy-part='month-header-grid']) {
+		display: grid;
+		width: 100%;
+		flex-shrink: 0;
+	}
+
+	:where([data-ilamy-slot='month-header'][data-sticky='true']),
+	:where([data-ilamy-slot='grid-header'][data-sticky='true']) {
+		position: sticky;
+		top: 0;
+		z-index: 30;
+	}
+
+	:where([data-ilamy-slot='grid-header']) {
+		min-width: 100%;
+		width: 100%;
+		flex-shrink: 0;
+	}
+
+	:where([data-ilamy-part='month-row']) {
+		position: relative;
+		display: grid;
+		width: 100%;
+		flex: 1 1 0%;
+	}
+
+	:where([data-ilamy-part='week-num-cell']) {
+		display: flex;
+		justify-content: center;
+		align-items: flex-start;
+		padding-top: 0.5rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	:where([data-ilamy-slot='day-header']) {
+		flex: 1 1 0%;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+	}
+
+	:where([data-ilamy-part='day-banner']) {
+		display: flex;
+		min-height: 3rem;
+		width: 100%;
+		align-items: center;
+		justify-content: center;
+	}
+
+	:where([data-ilamy-part='time-col-header']) {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	:where([data-ilamy-part='header-corner']) {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	:where([data-ilamy-part='col-header-label']),
+	:where([data-ilamy-part='time-col-header'] > span),
+	:where([data-ilamy-part='res-h-day-group'] > span),
+	:where([data-ilamy-part='header-corner'] > span),
+	:where([data-ilamy-part='header-corner'] > strong),
+	:where([data-ilamy-slot='day-header'] > span) {
+		display: block;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	:where([data-ilamy-part='header-corner'][data-sticky='true']) {
+		position: sticky;
+		inset-inline-start: 0;
+		z-index: 35;
+	}
+
+	:where([data-ilamy-slot='resource-header'][data-sticky='true']) {
+		position: sticky;
+		inset-inline-start: 0;
+		z-index: 20;
+	}
+
+	:where([data-ilamy-slot='resource-header']) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-slot='grid-row']) {
+		display: flex;
+		flex: 1 1 0%;
+		min-width: 0;
+		position: relative;
+	}
+
+	:where([data-ilamy-part='grid-row-grid']) {
+		position: relative;
+		display: grid;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-grid-lines='true']) {
+		gap: 1px;
+	}
+
+	:where([data-ilamy-slot='cell']) {
+		flex: 1 1 0%;
+		min-width: 0;
+		position: relative;
+		display: flex;
+		flex-direction: column;
+	}
+
+	:where([data-ilamy-part='cell-header']) {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-part='week-num-inline']) {
+		pointer-events: none;
+		font-size: 0.625rem;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
+		color: var(--ilamy-muted-fg);
+	}
+
+	:where([data-ilamy-part='cell-day-num']) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Time grid structural rows & columns */
+	:where([data-ilamy-part='time-grid-header-row']) {
+		display: grid;
+		min-width: 100%;
+		width: 100%;
+	}
+
+	:where([data-ilamy-part='time-grid-body']) {
+		display: grid;
+		min-width: 100%;
+		width: 100%;
+		position: relative;
+	}
+
+	:where([data-ilamy-part='time-axis']) {
+		position: sticky;
+		inset-inline-start: 0;
+		z-index: 20;
+	}
+
+	:where([data-ilamy-part='time-axis-hour']) {
+		box-sizing: border-box;
+		padding-inline-end: 0.5rem;
+		padding-top: 0.25rem;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+	}
+
+	:where([data-ilamy-part='time-col']) {
+		position: relative;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-part='time-slot']) {
+		width: 100%;
+		cursor: pointer;
+	}
+
+	:where([data-ilamy-part='events-layer']) {
+		position: absolute;
+		inset: 0;
+		overflow: clip;
+		pointer-events: none;
+		z-index: 10;
+	}
+
+	:where([data-ilamy-part='month-events-overlay']) {
+		position: absolute;
+		inset-inline: 0;
+		bottom: 0;
+		overflow: clip;
+		pointer-events: none;
+		z-index: 10;
+	}
+
+	:where([data-ilamy-part='event-wrapper']) {
+		position: absolute;
+		pointer-events: auto;
+	}
+
+	:where([data-ilamy-slot='all-day-row']) {
+		display: flex;
+		width: 100%;
+		min-height: 3rem;
+	}
+
+	:where([data-ilamy-part='all-day-row']) {
+		position: relative;
+		display: grid;
+		min-width: 100%;
+		width: 100%;
+		min-height: 2.25rem;
+	}
+
+	:where([data-ilamy-part='all-day-events-overlay']) {
+		overflow: clip;
+		pointer-events: none;
+		z-index: 10;
+	}
+
+	:where([data-ilamy-part='all-day-label']) {
+		position: sticky;
+		inset-inline-start: 0;
+		z-index: 20;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.25rem;
+	}
+
+	:where([data-ilamy-part='all-day-cell']) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding: 0.25rem;
+		min-width: 0;
+		min-height: 2rem;
+		overflow: clip;
+	}
+
+	:where([data-ilamy-part='all-day-item']) {
+		height: 22px;
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	/* Horizontal resource timeline */
+	:where([data-ilamy-part='res-h-header']) {
+		display: grid;
+		min-width: 100%;
+		width: max-content;
+	}
+
+	:where([data-ilamy-part='res-h-row']) {
+		display: grid;
+		min-width: 100%;
+		width: max-content;
+	}
+
+	:where([data-ilamy-part='res-h-day-group']) {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.125rem;
+		min-width: 0;
+		overflow: clip;
+	}
+
+	:where([data-ilamy-part='res-h-day-group'][data-hourly='true']) {
+		flex-direction: row;
+		justify-content: flex-start;
+	}
+
+	:where([data-ilamy-part='res-h-day-label']) {
+		position: sticky;
+		inset-inline-start: 50%;
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		flex-shrink: 0;
+		gap: 0.125rem;
+		padding-inline: 8px;
+		white-space: nowrap;
+	}
+
+	/* Event bars, continuation stripes, and VS Code resize handles */
+	:where([data-ilamy-slot='event-bar']) {
+		display: block;
+		min-width: 0;
+		overflow: clip;
+		padding: 0;
+		cursor: pointer;
+	}
+
+	:where([data-ilamy-part='event-bar'], [data-ilamy-part='event-drag-preview']) {
+		position: relative;
+		width: 100%;
+		height: 100%;
+		user-select: none;
+		text-align: left;
+	}
+
+	:where([data-ilamy-part='event-bar-content']) {
+		position: relative;
+		display: block;
+		width: 100%;
+		height: 100%;
+		overflow: clip;
+		box-sizing: border-box;
+	}
+
+	:where([data-ilamy-slot='event-bar'][data-compact='true'] [data-ilamy-part='event-bar-content']) {
+		display: flex;
+		align-items: center;
+		white-space: nowrap;
+	}
+
+	:where([data-ilamy-slot='event-bar'][data-draggable='true']) {
+		cursor: grab;
+	}
+
+	:where([data-ilamy-slot='event-bar'][data-draggable='true']:active) {
+		cursor: grabbing;
+	}
+
+	:where([data-ilamy-part='event-label']) {
+		display: inline-block;
+		max-width: 100%;
+		vertical-align: top;
+	}
+
+	:where([data-ilamy-slot='event-bar'][data-drag-axis='horizontal'] [data-ilamy-part='event-label']) {
+		position: sticky;
+		inset-inline-start: calc(var(--ilamy-sticky-left, 0px) + 0.25rem);
+		display: inline-block;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		vertical-align: top;
+	}
+
+	:where([data-ilamy-slot='event-bar'][data-drag-axis='vertical'] [data-ilamy-part='event-label']) {
+		position: sticky;
+		top: calc(var(--ilamy-sticky-top, 0px) + 0.25rem);
+		display: block;
+		max-width: 100%;
+		white-space: normal;
+		overflow-wrap: break-word;
+	}
+
+	:where([data-ilamy-slot='event-bar'][data-compact='true'] [data-ilamy-part='event-label']) {
+		white-space: nowrap;
+	}
+
+	:where([data-ilamy-part='event-time']) {
+		max-width: 100%;
+	}
+
+	:where([data-ilamy-part='event-label'] > [data-ilamy-part='event-time']) {
+		margin-inline-end: 0.25rem;
+	}
+
+	:where([data-ilamy-part='event-title']) {
+		min-width: 0;
+	}
+
+	:where([data-ilamy-part='agenda-title']) {
+		flex: 1 1 auto;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	:where([data-ilamy-part='continuation-stripe']) {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 2px;
+		pointer-events: none;
+	}
+
+	:where([data-ilamy-part='continuation-stripe'][data-edge='start']) {
+		inset-inline-start: 0;
+	}
+
+	:where([data-ilamy-part='continuation-stripe'][data-edge='end']) {
+		inset-inline-end: 0;
+	}
+
+	:where([data-ilamy-slot='resize-handle']) {
+		position: absolute;
+		z-index: 20;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 0;
+		transition: opacity 150ms ease;
+		user-select: none;
+		touch-action: none;
+	}
+
+	:where([data-ilamy-slot='resize-handle'][data-resize-axis='horizontal']) {
+		top: 0;
+		bottom: 0;
+		width: 6px;
+		max-width: 33.333%;
+		flex-direction: column;
+		cursor: ew-resize;
+	}
+
+	:where([data-ilamy-slot='resize-handle'][data-resize-axis='horizontal'][data-resize-handle='start']) {
+		inset-inline-start: 0;
+	}
+
+	:where([data-ilamy-slot='resize-handle'][data-resize-axis='horizontal'][data-resize-handle='end']) {
+		inset-inline-end: 0;
+	}
+
+	:where([data-ilamy-slot='resize-handle'][data-resize-axis='vertical']) {
+		inset-inline: 0;
+		height: 6px;
+		max-height: 33.333%;
+		flex-direction: row;
+		cursor: ns-resize;
+	}
+
+	:where([data-ilamy-slot='resize-handle'][data-resize-axis='vertical'][data-resize-handle='start']) {
+		top: 0;
+	}
+
+	:where([data-ilamy-slot='resize-handle'][data-resize-axis='vertical'][data-resize-handle='end']) {
+		bottom: 0;
+	}
+
+	:where([data-ilamy-slot='event-bar']:hover [data-ilamy-slot='resize-handle']),
+	:where([data-ilamy-slot='event-bar']:focus-within [data-ilamy-slot='resize-handle']) {
+		opacity: 0.6;
+	}
+
+	:where([data-ilamy-slot='event-bar'] [data-ilamy-slot='resize-handle']:hover) {
+		opacity: 1;
+	}
+
+	:where([data-ilamy-part='resize-dots']) {
+		display: block;
+		pointer-events: none;
+	}
+
+	:where([data-ilamy-slot='resize-handle'][data-resize-axis='vertical']) > :where([data-ilamy-part='resize-dots']) {
+		width: 12px;
+		height: 2px;
+		background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+		background-size: 4px 2px;
+		background-repeat: repeat-x;
+	}
+
+	:where([data-ilamy-slot='resize-handle'][data-resize-axis='horizontal']) > :where([data-ilamy-part='resize-dots']) {
+		width: 2px;
+		height: 12px;
+		background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+		background-size: 2px 4px;
+		background-repeat: repeat-y;
+	}
+
+	@media (hover: none) {
+		:where([data-ilamy-slot='resize-handle']) {
+			display: none;
+		}
+	}
+
+	:where([data-ilamy-slot='now-indicator']) {
+		position: absolute;
+		pointer-events: none;
+		z-index: 15;
+		display: flex;
+		align-items: center;
+	}
+
+	:where([data-ilamy-slot='more-link']) {
+		position: relative;
+		z-index: 15;
+		display: inline-flex;
+		min-height: 1.5rem;
+		align-items: center;
+		cursor: pointer;
+		background: transparent;
+		border: 0;
+		pointer-events: auto;
+	}
+
+	/* Agenda View */
+	:where([data-ilamy-part='agenda-list']) {
+		display: flex;
+		flex-direction: column;
+	}
+
+	:where([data-ilamy-part='agenda-empty']) {
+		display: flex;
+		height: 100%;
+		min-height: 12rem;
+		align-items: center;
+		justify-content: center;
+	}
+
+	:where([data-ilamy-part='agenda-day']) {
+		display: flex;
+		gap: 1rem;
+	}
+
+	:where([data-ilamy-part='agenda-day-col']) {
+		display: flex;
+		width: 4rem;
+		flex-shrink: 0;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+	}
+
+	:where([data-ilamy-part='agenda-events-col']) {
+		position: relative;
+		display: flex;
+		flex: 1 1 0%;
+		flex-direction: column;
+		gap: 0.25rem;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-part='agenda-row']) {
+		display: flex;
+		width: 100%;
+		align-items: center;
+		gap: 0.5rem;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	:where([data-ilamy-part='agenda-time']) {
+		width: 5.5rem;
+		flex-shrink: 0;
+		font-variant-numeric: tabular-nums;
+	}
+
+	:where([data-ilamy-part='agenda-dot']) {
+		width: 0.75rem;
+		height: 0.75rem;
+		flex-shrink: 0;
+	}
+
+	:where([data-ilamy-part='agenda-badge']) {
+		flex-shrink: 0;
+	}
+
+	/* Year View */
+	:where([data-ilamy-part='year-grid']) {
+		display: grid;
+		grid-template-columns: repeat(1, minmax(0, 1fr));
+		gap: 1rem;
+		padding: 1rem;
+		grid-auto-rows: 1fr;
+	}
+
+	@container ilamy-grid (min-width: 40rem) {
+		:where([data-ilamy-part='year-grid']) {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@container ilamy-grid (min-width: 64rem) {
+		:where([data-ilamy-part='year-grid']) {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+
+	:where([data-ilamy-part='year-card']) {
+		display: flex;
+		flex-direction: column;
+		text-align: left;
+	}
+
+	:where([data-ilamy-part='year-card-header']) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-block-end: 0.5rem;
+	}
+
+	:where([data-ilamy-part='year-days-grid']) {
+		display: grid;
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+		gap: 1px;
+	}
+
+	:where([data-ilamy-part='year-day-btn']) {
+		position: relative;
+		display: flex;
+		aspect-ratio: 1 / 1;
+		width: 100%;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
+
+	:where([data-ilamy-part='year-day-dots']) {
+		position: absolute;
+		bottom: 1px;
+		display: flex;
+		width: 100%;
+		justify-content: center;
+		gap: 1px;
+	}
+
+	:where([data-ilamy-part='year-day-dot']) {
+		width: 3px;
+		height: 3px;
+	}
+
+	/* Dialogs, Popovers, Pickers & Forms */
+	:where([data-ilamy-part='dialog']) {
+		position: fixed;
+		inset: 0;
+		margin: auto;
+		display: none;
+		max-height: 90vh;
+		width: min(90vw, var(--ilamy-dialog-max-w, 500px));
+		overflow: hidden;
+		overscroll-behavior: contain;
+		pointer-events: auto;
+	}
+
+	:where([data-ilamy-part='dialog'][open]) {
+		display: flex;
+		flex-direction: column;
+	}
+
+	:where([data-ilamy-part='dialog-header']) {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-shrink: 0;
+	}
+
+	:where([data-ilamy-part='dialog-body']) {
+		flex: 1 1 0%;
+		min-height: 0;
+		overflow-y: auto;
+	}
+
+	:where([data-ilamy-part='dialog-footer']) {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.5rem;
+		flex-shrink: 0;
+	}
+
+	:where([data-ilamy-part='form']) {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 0%;
+		min-height: 0;
+	}
+
+	:where([data-ilamy-part='form-stack']) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.875rem;
+	}
+
+	:where([data-ilamy-part='form-grid-2']) {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+
+	:where([data-ilamy-part='form-checkbox-row']) {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	:where([data-ilamy-part='popover']) {
+		position: fixed;
+		z-index: 80;
+		width: max-content;
+		max-width: min(20rem, calc(100vw - 1rem));
+	}
+
+	:where([data-ilamy-part='mini-calendar']) {
+		width: 16.5rem;
+		max-width: 100%;
+	}
+
+	:where([data-ilamy-part='picker-nav']) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-block-end: 0.5rem;
+	}
+
+	:where([data-ilamy-part='picker-grid'][data-cols='7']) {
+		display: grid;
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+		gap: 2px;
+	}
+
+	:where([data-ilamy-part='picker-grid'][data-cols='3']) {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.25rem;
+	}
+
+	:where([data-ilamy-part='mini-calendar']) table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+
+	:where([data-ilamy-part='mini-calendar']) :where(th, td) {
+		padding: 1px;
+		text-align: center;
+	}
+
+	:where([data-ilamy-part='mini-calendar'] tr[data-week-hover='true'] td) {
+		padding-inline: 0;
+	}
+
+	:where([data-ilamy-part='picker-cell']) {
+		width: 100%;
+	}
+
+	:where([data-ilamy-part='time-picker-search']) {
+		padding: 0.25rem;
+		border-bottom: 1px solid var(--ilamy-border);
+	}
+
+	:where([data-ilamy-part='time-picker-empty']) {
+		padding: 1rem 0.5rem;
+		text-align: center;
+		font-size: 0.875rem;
+		color: var(--ilamy-muted-fg);
+	}
+
+	:where([data-ilamy-part='time-picker-list']) {
+		display: flex;
+		flex-direction: column;
+		max-height: 13rem;
+		overflow-y: auto;
+	}
+
+	:where([data-ilamy-part='color-swatches']) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		padding: 0.25rem;
+	}
+
+	:where([data-ilamy-part='color-swatch']) {
+		width: 1.5rem;
+		height: 1.5rem;
+		cursor: pointer;
+	}
+
+	:where([data-ilamy-part='overflow-list']) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		max-height: 60vh;
+		overflow-y: auto;
+		padding: 0.25rem;
+		margin: -0.25rem;
+	}
+
+	:where([data-ilamy-part='repeat-header']) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	:where([data-ilamy-part='repeat-body']) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-block-start: 0.75rem;
+	}
+
+	:where([data-ilamy-part='repeat-inline-row']) {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	:where([data-ilamy-part='repeat-weekday-list']) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-block-start: 0.25rem;
+	}
+
+	:where([data-ilamy-part='repeat-count-input']) {
+		width: 4.5rem;
+	}
+
+	@keyframes ilamy-week-num-in {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	:where([data-ilamy-part='header-corner'] > .animate-in) {
+		animation: ilamy-week-num-in 300ms ease-out both;
+	}
+}

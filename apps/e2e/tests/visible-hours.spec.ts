@@ -91,7 +91,7 @@ test.describe('visible hours: events', () => {
 	})
 
 	test('a drag onto the last row lands in that hour', async ({ page }) => {
-		await openDay(page)
+		await openDay(page, { ...WINDOW, editable: 'true' })
 		const grid = new TimeGrid(page)
 		const source = await grid.bars('vh-midday').first().boundingBox()
 		const target = await grid.slotAt('2025-03-12T17:00').boundingBox()
@@ -118,7 +118,7 @@ test.describe('visible hours: events', () => {
 
 test.describe('visible hours: now and scroll', () => {
 	test('the now-line shows when now is inside the window', async ({ page }) => {
-		await openDay(page)
+		await openDay(page, { ...WINDOW, nowIndicator: 'true' })
 
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
 	})
@@ -126,7 +126,11 @@ test.describe('visible hours: now and scroll', () => {
 	test('the now-line is hidden when now is outside the window', async ({
 		page,
 	}) => {
-		await openDay(page, { slotMinTime: '10:00', slotMaxTime: '18:00' })
+		await openDay(page, {
+			slotMinTime: '10:00',
+			slotMaxTime: '18:00',
+			nowIndicator: 'true',
+		})
 
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 	})
@@ -135,9 +139,7 @@ test.describe('visible hours: now and scroll', () => {
 		page,
 	}) => {
 		await openDay(page, { ...WINDOW, scrollTime: '06:00', height: '400px' })
-		const viewport = page.locator(
-			'[data-testid="vertical-grid-scroll"] [data-radix-scroll-area-viewport]'
-		)
+		const viewport = page.locator('[data-ilamy-slot="grid-scroll"]')
 
 		await expect(viewport).toBeVisible()
 		expect(await viewport.evaluate((el) => el.scrollTop)).toBe(0)
@@ -154,7 +156,7 @@ test.describe('visible hours: resource hour timeline', () => {
 			orientation: 'horizontal',
 			settings: WINDOW,
 		})
-		const headers = page.locator('[data-testid^="resource-day-time-label-"]')
+		const headers = page.locator('[data-ilamy-part="res-h-hour-cell"]')
 
 		await new ResourceAxis(page).expectRendered()
 		await expect(headers).toHaveCount(10)

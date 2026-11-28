@@ -1,5 +1,5 @@
+@import '@ilamy/calendar/styles.css';
 @import 'tailwindcss';
-@source "../node_modules/@ilamy/calendar/dist";
 
 /* Defining CSS variables to use. */
 :root {

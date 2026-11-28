@@ -21,7 +21,7 @@ const REGULAR_SURFACES: readonly Surface[] = [
 	{ view: 'day' },
 	{ view: 'week' },
 	{ view: 'month' },
-	{ view: 'year' },
+	{ view: 'year', plugins: ['year'] },
 	{ view: 'agenda', plugins: ['agenda'] },
 ]
 

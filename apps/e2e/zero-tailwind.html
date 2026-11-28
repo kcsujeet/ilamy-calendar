@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>ilamy Calendar Zero-Tailwind E2E</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 16px;
+        height: 100vh;
+        box-sizing: border-box;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      #calendar-host {
+        height: 600px;
+        width: 100%;
+      }
+      .dark {
+        background-color: #09090b;
+        color: #fafafa;
+      }
+    </style>
+    <script src="/src/zero-tailwind-entry.ts" type="module"></script>
+  </head>
+  <body>
+    <div id="calendar-host"></div>
+  </body>
+</html>

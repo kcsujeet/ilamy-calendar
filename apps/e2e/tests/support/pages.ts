@@ -145,7 +145,7 @@ export class MonthGrid extends CalendarPage {
 	 * element that actually spans the day columns.
 	 */
 	bar(eventId: string): Locator {
-		return this.page.getByTestId(`horizontal-event-${eventId}`)
+		return this.page.getByTestId(`calendar-event-${eventId}`)
 	}
 
 	/** The week number of each row, when `weekNumbers` is on. */
@@ -168,7 +168,7 @@ export class MonthGrid extends CalendarPage {
 export class TimeGrid extends CalendarPage {
 	/** One column per visible day. */
 	get dayColumns(): Locator {
-		return this.page.locator('[data-testid^="vertical-col-day-col-"]')
+		return this.page.locator('[data-time-column="true"]')
 	}
 
 	get allDayRow(): Locator {
@@ -176,7 +176,7 @@ export class TimeGrid extends CalendarPage {
 	}
 
 	get hourLabels(): Locator {
-		return this.page.locator('[data-testid^="vertical-time-"]')
+		return this.page.locator('[data-ilamy-part="time-axis-hour"]')
 	}
 
 	/**
@@ -185,7 +185,7 @@ export class TimeGrid extends CalendarPage {
 	 * that actually spans the hours.
 	 */
 	bars(eventId: string): Locator {
-		return this.page.getByTestId(`vertical-event-${eventId}`)
+		return this.page.getByTestId(`calendar-event-${eventId}`)
 	}
 
 	/**
@@ -195,24 +195,21 @@ export class TimeGrid extends CalendarPage {
 	 */
 	slotAt(startsWith: string): Locator {
 		return this.page.locator(
-			`[data-testid^="vertical-cell-"][data-start^="${startsWith}"]`
+			`[data-ilamy-part="time-slot"][data-start^="${startsWith}"]`
 		)
 	}
 }
 
 export class YearGrid extends CalendarPage {
 	get monthCards(): Locator {
-		return this.page.locator('[data-testid^="year-month-"]')
+		return this.page.locator('[data-ilamy-part="year-card"]')
 	}
 }
 
 export class ResourceAxis extends CalendarPage {
 	/**
-	 * A resource by its title. Deliberately text-based: the axis header carries
-	 * a different testid in each orientation (`horizontal-row-label-*` when
-	 * resources are rows, `resource-columns-header` when they are columns) and
-	 * the vertical week header carries none at all. The title is what a person
-	 * reads in every one of them.
+	 * A resource by its title. Deliberately text-based: the title is what a
+	 * person reads in both orientations.
 	 */
 	resource(title: string): Locator {
 		return this.root.getByText(title, { exact: true })
@@ -220,8 +217,6 @@ export class ResourceAxis extends CalendarPage {
 
 	/** The axis container, where the current orientation labels one. */
 	get header(): Locator {
-		return this.page.locator(
-			'[data-testid^="horizontal-row-label-"], [data-testid="resource-columns-header"]'
-		)
+		return this.page.locator('[data-testid^="resource-header-"]')
 	}
 }

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { formDialog } from './support/event-form'
+import { dateButtons, formDialog } from './support/event-form'
 import { gotoScenario } from './support/harness'
 
 /*
@@ -40,12 +40,7 @@ test.describe('a translations object written before 3.3', () => {
 		})
 		await page.getByRole('button', { name: 'New', exact: true }).click()
 		await formDialog(page).waitFor()
-		await page
-			.locator(
-				'form button[data-slot="popover-trigger"]:has(svg.lucide-calendar)'
-			)
-			.first()
-			.click()
+		await dateButtons(page).first().click()
 
 		await expect(page.getByRole('button', { name: 'Next month' })).toBeVisible()
 		await expect(page.getByRole('button', { name: 'nextMonth' })).toHaveCount(0)

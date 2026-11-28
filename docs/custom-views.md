@@ -67,20 +67,31 @@ One entry. `range` defines the window, `columns` its rows, `navigationStep` make
 prev/next jump a full window (the event pipeline is range-driven, so events follow free):
 
 ```tsx
+import {
+	add,
+	endOf,
+	formatDateRange,
+	type IsoDateString,
+	parseDate,
+	startOf,
+	toOffsetIso,
+	type ViewConfig,
+} from '@ilamy/calendar'
 import type {
-	Dayjs,
 	HorizontalRowSpec,
 	IlamyPlugin,
 	PluginView,
-	ViewConfig,
-} from '@ilamy/calendar'
+} from '@ilamy/calendar/react'
 
 const WINDOW = 40
 const DAYS_PER_ROW = 10
 
-const fortyDayRows = (date: Dayjs, _config: ViewConfig): HorizontalRowSpec[] => {
-	const start = date.startOf('day')
-	const days = Array.from({ length: WINDOW }, (_, i) => start.add(i, 'day'))
+const fortyDayRows = (
+	date: IsoDateString,
+	config: ViewConfig
+): HorizontalRowSpec[] => {
+	const start = startOf(parseDate(date, config.timezone), 'day')
+	const days = Array.from({ length: WINDOW }, (_, i) => add(start, i, 'day'))
 	const rows: HorizontalRowSpec[] = []
 	for (let row = 0; row * DAYS_PER_ROW < days.length; row += 1) {
 		const rowDays = days.slice(row * DAYS_PER_ROW, (row + 1) * DAYS_PER_ROW)
@@ -88,11 +99,14 @@ const fortyDayRows = (date: Dayjs, _config: ViewConfig): HorizontalRowSpec[] => 
 			id: `forty-row-${row}`,
 			className: 'flex-1',
 			showDayNumber: true,
-			columns: rowDays.map((day) => ({
-				id: `forty-${day.toISOString()}`,
-				day,
-				gridType: 'day' as const,
-			})),
+			columns: rowDays.map((day) => {
+				const dayIso = toOffsetIso(day)
+				return {
+					id: `forty-${dayIso}`,
+					day: dayIso,
+					gridType: 'day' as const,
+				}
+			}),
 		})
 	}
 	return rows
@@ -101,18 +115,31 @@ const fortyDayRows = (date: Dayjs, _config: ViewConfig): HorizontalRowSpec[] => 
 export const fortyDayView: PluginView = {
 	name: 'forty-day',
 	label: '40 days',
+	icon: () => null,
 	layout: 'horizontal',
 	navigationStep: { amount: WINDOW, unit: 'day' },
-	range: (date) => ({
-		start: date.startOf('day'),
-		end: date.add(WINDOW - 1, 'day').endOf('day'),
-	}),
+	range: (date, config) => {
+		const zdt = parseDate(date, config.timezone)
+		return {
+			start: toOffsetIso(startOf(zdt, 'day')),
+			end: toOffsetIso(endOf(add(zdt, WINDOW - 1, 'day'), 'day')),
+		}
+	},
 	columns: fortyDayRows,
-	renderHeader: ({ date }) => (
-		<div className="flex h-12 items-center justify-center font-semibold">
-			{date.format('LL')} — {date.add(WINDOW - 1, 'day').format('LL')}
-		</div>
-	),
+	renderHeader: ({ date, config }) => {
+		const start = parseDate(date, config.timezone)
+		const end = add(start, WINDOW - 1, 'day')
+		return (
+			<div className="flex h-12 items-center justify-center font-semibold">
+				{formatDateRange(
+					start,
+					end,
+					{ month: 'short', day: 'numeric', year: 'numeric' },
+					config.locale
+				)}
+			</div>
+		)
+	},
 	// No `component`: spec-driven views render through the shared engines.
 	// `component` is only for views that render everything themselves.
 }
@@ -134,20 +161,23 @@ already filters per resource.
 
 ```tsx
 const fortyDayResourceRows = (
-	date: Dayjs,
+	date: IsoDateString,
 	config: ViewConfig
 ): HorizontalRowSpec[] => {
-	const start = date.startOf('day')
-	const days = Array.from({ length: WINDOW }, (_, i) => start.add(i, 'day'))
+	const start = startOf(parseDate(date, config.timezone), 'day')
+	const days = Array.from({ length: WINDOW }, (_, i) => add(start, i, 'day'))
 	return (config.resources ?? []).map((resource) => ({
 		id: `forty-${resource.id}`,
 		className: 'flex-1',
 		resource,
-		columns: days.map((day) => ({
-			id: `forty-${resource.id}-${day.toISOString()}`,
-			day,
-			gridType: 'day' as const,
-		})),
+		columns: days.map((day) => {
+			const dayIso = toOffsetIso(day)
+			return {
+				id: `forty-${resource.id}-${dayIso}`,
+				day: dayIso,
+				gridType: 'day' as const,
+			}
+		}),
 	}))
 }
 ```

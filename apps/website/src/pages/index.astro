@@ -293,8 +293,9 @@ import MainLayout from '@/layouts/main-layout.astro'
 interface CalendarEvent {
   id: string | number;
   title: string;
-  start: dayjs.Dayjs;
-  end: dayjs.Dayjs;
+  start: string; // ISO 8601 with offset
+  end: string;   // ISO 8601 with offset
+  timezone?: string;
   color?: string;
   // ...other properties
 }`}
@@ -417,7 +418,7 @@ import { recurrencePlugin }
               </div>
               <h3 class="text-lg font-semibold mb-2">Localization</h3>
               <p class="text-muted-foreground">
-                Use any dayjs locale you import, and translate UI text with the translations or translator props.
+                Use any BCP 47 locale via built-in Intl formatting, and translate UI text with the translations or translator props.
               </p>
             </CardContent>
           </Card>

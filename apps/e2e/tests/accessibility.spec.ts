@@ -1,13 +1,11 @@
 import { expect, type Page, test } from '@playwright/test'
+import { expectNoAxeViolations } from './support/axe'
 import { gotoScenario, releasePointer } from './support/harness'
 import { MonthGrid } from './support/pages'
 
 /**
- * Keyboard and screen-reader behaviour of the event bars and the event form.
- * WCAG 2.2: 2.1.1 Keyboard, 4.1.2 Name/Role/Value, 1.3.1 Info and
- * Relationships, 3.3.2 Labels or Instructions. Asserted as role and accessible
- * name, which is what an assistive technology reads, not with an axe scan:
- * axe is not a dependency of this repo.
+ * Keyboard, screen-reader, and axe-core WCAG 2.2 A+AA behaviour of the
+ * calendar views, event bars, date pickers, and event form.
  */
 
 const openWeek = async (page: Page, plugins?: string[]) => {
@@ -68,7 +66,8 @@ test.describe('event bars', () => {
 		page,
 	}) => {
 		await openWeek(page)
-		const bar = page.getByTestId('vertical-event-basic-1').getByRole('button')
+		const bar = page.getByTestId('calendar-event-basic-1')
+		await expect(bar).toHaveRole('button')
 		const descriptionId = await bar.getAttribute('aria-describedby')
 
 		const description = await page.evaluate(
@@ -164,5 +163,96 @@ test.describe('event form', () => {
 		await expect(page.getByRole('button', { name: 'Next month' })).toHaveCount(
 			1
 		)
+	})
+
+	test('the date picker supports arrow-key grid navigation and full-date names', async ({
+		page,
+	}) => {
+		const dialog = await openForm(page)
+		await dialog.getByRole('button', { name: /^Start Date/ }).click()
+
+		const grid = page.getByRole('grid')
+		await expect(grid).toBeVisible()
+		const firstDay = grid.locator('button[data-day-key]:not(:disabled)').first()
+		const firstKey = await firstDay.getAttribute('data-day-key')
+		const firstLabel = await firstDay.getAttribute('aria-label')
+		expect(firstLabel).toMatch(/\d{4}/)
+
+		await firstDay.focus()
+		await page.keyboard.press('ArrowRight')
+		const nextKey = await page.evaluate(() =>
+			document.activeElement?.getAttribute('data-day-key')
+		)
+		expect(nextKey).toBeTruthy()
+		expect(nextKey).not.toBe(firstKey)
+	})
+})
+
+test.describe('header navigation and live announcements', () => {
+	test('header date picker exposes aria-haspopup and aria-expanded and navigation announces politely', async ({
+		page,
+	}) => {
+		await gotoScenario(page, { scenario: 'basic', view: 'month' })
+
+		const titleBtn = page.getByTestId('calendar-title')
+		await expect(titleBtn).toHaveAttribute('aria-haspopup', 'dialog')
+		await expect(titleBtn).toHaveAttribute('aria-expanded', 'false')
+
+		await titleBtn.click()
+		await expect(titleBtn).toHaveAttribute('aria-expanded', 'true')
+		await page.keyboard.press('Escape')
+		await expect(titleBtn).toHaveAttribute('aria-expanded', 'false')
+
+		const liveRegion = page.getByTestId('calendar-live-region')
+		await expect(liveRegion).toHaveAttribute('aria-live', 'polite')
+		await page.getByRole('button', { name: 'Next', exact: true }).click()
+		await expect(liveRegion).not.toHaveText('')
+	})
+})
+
+test.describe('axe-core WCAG 2.2 A+AA audits', () => {
+	for (const [view, plugins] of [
+		['month', undefined],
+		['week', undefined],
+		['day', undefined],
+		['year', ['year']],
+		['agenda', ['agenda']],
+	] as const) {
+		test(`${view} view has zero axe violations`, async ({ page }) => {
+			await gotoScenario(page, {
+				scenario: 'basic',
+				view,
+				plugins: plugins ? [...plugins] : undefined,
+			})
+			await expectNoAxeViolations(page, {
+				include: '[data-testid="ilamy-calendar"]',
+			})
+		})
+	}
+
+	test('resource week view has zero axe violations', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'resources',
+			view: 'week',
+		})
+		await expectNoAxeViolations(page, {
+			include: '[data-testid="ilamy-calendar"]',
+		})
+	})
+
+	test('open event form dialog has zero axe violations', async ({ page }) => {
+		await openWeek(page, ['recurrence'])
+		await page.getByRole('button', { name: 'New' }).click()
+		await expect(page.getByRole('dialog')).toBeVisible()
+		await expectNoAxeViolations(page, { include: '[role="dialog"]' })
+	})
+
+	test('open header date picker popover has zero axe violations', async ({
+		page,
+	}) => {
+		await gotoScenario(page, { scenario: 'basic', view: 'day' })
+		await page.getByTestId('calendar-title').click()
+		await expect(page.getByRole('grid')).toBeVisible()
+		await expectNoAxeViolations(page, { include: '[data-slot="calendar"]' })
 	})
 })

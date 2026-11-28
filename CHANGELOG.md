@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v4.0.0](https://github.com/kcsujeet/ilamy-calendar/compare/v3.3.1...v4.0.0)
+
+> 19 November 2026
+
+v4.0 is a major release built on TC39 Temporal, a framework-agnostic headless core, opt-in styling adapters (MUI & StyleX alongside the zero-config Tailwind/shadcn default), and strict RFC 5545 / FullCalendar / Google Calendar defaults. See `docs/migration-v4.md` for the full upgrade guide.
+
+##### Breaking Changes
+
+- **Temporal date engine (`dayjs` removed):** Replaced `dayjs` throughout the monorepo with `temporal-polyfill` (`fns/*` named imports) and `Intl.DateTimeFormat` with explicit `timeZone`. Zero module-global timezone state — multiple `<IlamyCalendar>` instances with different `timezone` props render cleanly side-by-side on first paint and SSR. Removed `dayjs`, `Dayjs`, and `ManipulateType` exports and removed `dayjs` from `peerDependencies`.
+- **Canonical ISO 8601 string outputs:** All public date outputs (`CalendarEvent.start/end`, `CellInfo`, `EventDropInfo`, `DateRange`, `EventsFetchInfo`, `PluginDateRange`, `IlamyCalendarApi.currentDate`, `RenderCurrentTimeIndicatorProps`, callbacks) now return ISO 8601 strings with explicit offset (e.g. `'2026-03-02T09:00:00-05:00'`, matching Google Calendar API). Public inputs accept `string | Date`.
+- **Removed deprecated v3 APIs:** Removed `IlamyResourceCalendar`, `IlamyResourceCalendarProps`, `disableDragAndDrop`, and `hideExportButton`.
+- **Year view and iCal export extracted to plugins:** Year view moved to `@ilamy/calendar/plugins/year` (`yearPlugin()`); iCal export moved to `@ilamy/calendar/plugins/ical` (`icalPlugin()`), mounting into `SLOT_TOOLBAR` and emitting RFC 5545 §3.6.5 `DTSTART;TZID=` + `VTIMEZONE` blocks.
+- **FullCalendar-aligned defaults:**
+  - `editable` defaults to `false` (events are read-only until `editable={true}`).
+  - `nowIndicator` defaults to `false`.
+  - `displayEventTime` defaults to `true`; `displayEventEnd` defaults to `false` in month view and `true` in time-grid (`week`/`day`) views.
+  - `onDateChange` / `currentRange` trims to visible (drawn) days when `hiddenDays` or `weekends={false}` hides days.
+  - Month cell clicks (`onCellClick`) and month drag-to-create selections report `allDay: true`, while dropping a timed event on a month cell preserves its time of day.
+- **Business hours shade only by default:** `businessHours` and month padding days shade visually (`data-non-business="true"`, `data-disabled="false"`) without blocking clicks or drops. `BusinessHours.daysOfWeek` defaults to Monday–Friday on object form (array entries omitting `daysOfWeek` are ignored). Opt into hard constraints via `eventConstraint="businessHours"` and `selectConstraint="businessHours"`.
+
+##### Features
+
+- feat: **first-party multi-framework adapters (zero React dependency)** shipped as subpath exports on `@ilamy/calendar` with optional peer dependencies (`react`/`react-dom` also optional):
+  - `@ilamy/calendar/vue` (`vue@^3.5.0`): `<IlamyCalendar />` component with reactive props, emits, `expose()`, native Vue scoped slots (`#event`, `#header`, `#resource`, `#event-form`), and `useIlamyCalendar` composable.
+  - `@ilamy/calendar/svelte` (`svelte@^5.0.0`): `ilamyCalendar` Svelte 5 Attachment (`{@attach}`), `ilamyCalendarAction` (`use:`), `mountIlamyCalendar`, and `createIlamyCalendar` (`svelte/reactivity` `createSubscriber`).
+  - `@ilamy/calendar/solid` (`solid-js@^2.0.0`): `<IlamyCalendar />` component, `mountSolidCalendar` (Solid 2 two-argument `createEffect` + `onCleanup`), and `createIlamyCalendar` signal store.
+  - `@ilamy/calendar/angular` (`@angular/core@^22.0.0`): `registerIlamyCalendarElement` (`<ilamy-calendar>` Custom Element with typed property setters & `CustomEvent`s), `createAngularCalendar` (Angular 22 Signals), and `mountAngularCalendar`.
+  - All four adapters share a zero-React, ~14 KB gzipped DOM renderer (`@ilamy/dom`) built on `@ilamy/core` with full feature parity (all 5 views, resources, pointer drag/resize/drag-to-create, RFC 5545 recurrence & `.ics` export, business hours & constraints, `unstyled`, `slotProps`, and StyleX themes).
+- feat: **framework-agnostic headless core** exported at `@ilamy/calendar/core` (zero React, zero CSS, ~6.6 KB gzipped) exposing `createCalendarController` (with `updateConfig` and `pickControllerActions`), layout engines (`layoutHorizontal`, `layoutVertical`), date-grid, business-hours, editability, and normalization utilities.
+- feat: **theming & styling primitives** on `IlamyCalendar`: `unstyled?: boolean`, `slotProps?: CalendarSlotProps`, and `components?: CalendarComponents` (`Button`, `Input`, `Textarea`, `Label`, `Checkbox`, `Dialog`, `Select`, `Popover`).
+- feat: **first-party MUI and StyleX theme adapters** exported at `@ilamy/calendar/themes/mui` (`createMuiTheme`, `@mui/material` optional peer) and `@ilamy/calendar/themes/stylex` (`createStylexTheme`, `@stylexjs/stylex` optional peer).
+- feat: per-event `timezone?: string` on `CalendarEvent` anchors offset-less wall-clock `start`/`end` in the event's IANA zone and drives `DTSTART;TZID=` + `VTIMEZONE` in `@ilamy/calendar/plugins/ical` and `@ilamy/calendar/plugins/recurrence` (Closes `#314`).
+- feat: **visible hover-revealed 3-dot resize handles** along resizable event bar edges — invisible at rest, subtle 3-dot CSS grip on event bar hover, full opacity and edge tint on handle hover.
+- feat: `eventConstraint?: 'businessHours'` and `selectConstraint?: 'businessHours'` enforce whole-range business-hours containment on moves, resizes, drag-to-create selections, and event form limits.
+
+##### Fixes
+
+- fix: `now()` reads `Date.now()` before converting through `Temporal.Instant`, so fake clocks in Playwright (`page.clock.install`), Vitest, Jest, and Bun control the calendar clock even in Chromium builds with native `Temporal`.
+- fix: `MonthGrid` and `YearGrid` title pickers preserve the selected clock face (`hour`, `minute`, `second`, `millisecond`) when picking a month or year across DST boundaries.
+- fix: `useScrollToTime` (`scrollToNow`) falls back to `[data-start]` day cells when a day-only grid (such as resource month view) marks all cells `data-all-day="true"`.
+
 #### [v3.3.1](https://github.com/kcsujeet/ilamy-calendar/compare/v3.3.0...v3.3.1)
 
 > 17 November 2026

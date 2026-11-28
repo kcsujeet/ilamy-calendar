@@ -8,15 +8,8 @@ A powerful calendar component for visualizing and managing events across multipl
 
 The Resource Calendar extends the standard calendar with resource-based event organization. Events are displayed in rows (or columns) where each represents a resource (person, room, equipment, etc.). It supports all standard calendar features including drag-and-drop, recurring events, and internationalization.
 
-:::caution[v2: use `IlamyCalendar` with `resources`]
-In v2 the resource axis is built into `IlamyCalendar`: pass `resources`, `orientation`, `renderResource`, and `weekViewGranularity` directly to it. The dedicated `IlamyResourceCalendar` component still works as a **deprecated alias** (it will be removed in the next major), so the examples below use `IlamyCalendar`.
-
-```tsx
-// Before (v1)
-<IlamyResourceCalendar resources={rooms} orientation="vertical" events={events} />
-// After (v2)
-<IlamyCalendar resources={rooms} orientation="vertical" events={events} />
-```
+:::note[Unified `IlamyCalendar` with `resources`]
+Pass `resources`, `orientation`, `renderResource`, and `weekViewGranularity` directly to `IlamyCalendar`. The legacy `IlamyResourceCalendar` alias was removed in v4.0.
 :::
 
 :::tip[Try it out]
@@ -28,8 +21,8 @@ Visit the [interactive demo](/demo) and toggle to "Resource Calendar" mode to se
 ### Simple Resource Calendar
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar';
-import { dayjs, type Resource, type CalendarEvent } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import type { Resource, CalendarEvent } from '@ilamy/calendar';
 
 const resources: Resource[] = [
   {
@@ -50,8 +43,8 @@ const events: CalendarEvent[] = [
   {
     id: 'event-1',
     title: 'Team Meeting',
-    start: dayjs('2025-08-04T09:00:00.000Z'),
-    end: dayjs('2025-08-04T10:00:00.000Z'),
+    start: '2025-08-04T09:00:00Z',
+    end: '2025-08-04T10:00:00Z',
     uid: 'event-1@ilamy.calendar',
     resourceId: 'room-a', // Assigned to Room A
   },
@@ -170,13 +163,13 @@ interface CalendarEvent {
 ### Single Resource Events
 
 ```tsx title="Event Assigned to One Resource"
-import { dayjs, type CalendarEvent } from '@ilamy/calendar';
+import type { CalendarEvent } from '@ilamy/calendar';
 
 const event: CalendarEvent = {
   id: 'meeting-1',
   title: 'Team Standup',
-  start: dayjs('2025-08-04T10:00:00.000Z'),
-  end: dayjs('2025-08-04T10:30:00.000Z'),
+  start: '2025-08-04T10:00:00Z',
+  end: '2025-08-04T10:30:00Z',
   uid: 'meeting-1@ilamy.calendar',
   resourceId: 'room-a', // Assigned to one resource
 };
@@ -187,13 +180,13 @@ const event: CalendarEvent = {
 Events that span multiple resources using the `resourceIds` array:
 
 ```tsx title="Event Spanning Multiple Resources"
-import { dayjs, type CalendarEvent } from '@ilamy/calendar';
+import type { CalendarEvent } from '@ilamy/calendar';
 
 const event: CalendarEvent = {
   id: 'all-hands',
   title: 'All Hands Meeting',
-  start: dayjs('2025-08-04T14:00:00.000Z'),
-  end: dayjs('2025-08-04T15:00:00.000Z'),
+  start: '2025-08-04T14:00:00Z',
+  end: '2025-08-04T15:00:00Z',
   uid: 'all-hands@ilamy.calendar',
   resourceIds: ['room-a', 'room-b', 'room-c'], // Spans multiple resources
   color: '#8B5CF6',
@@ -224,7 +217,7 @@ These resource props are part of [IlamyCalendar](/docs/components/calendar)'s pr
 ### Room Booking System
 
 ```tsx title="Conference Room Booking"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 import type { CalendarEvent, CellInfo, Resource } from '@ilamy/calendar';
 import { useState } from 'react';
 
@@ -391,15 +384,15 @@ const resources: Resource[] = [
 2. **Resource Shading**: Each resource row (or column) will only enable the time slots that match its specific `businessHours`. Slots outside its specific availability will be shaded/disabled.
 3. **Fallback**: If a resource does not have specific `businessHours` defined, it falls back to using the global `businessHours` configuration.
 
-:::caution[Changing in 4.0]
-In 4.0, business hours (global or per resource) only shade; the grid and the event form stop refusing closed time unless you opt in with `eventConstraint="businessHours"` and `selectConstraint="businessHours"`. `isCellDisabled` keeps refusing. See [Business Hours](/docs/components/calendar#business-hours).
+:::note[v4.0 behavior]
+Business hours (global or per resource) shade non-business time only; the grid and event form do not refuse closed time unless you opt in with `eventConstraint="businessHours"` and/or `selectConstraint="businessHours"`. `isCellDisabled` always refuses clicks and drops. See [Business Hours](/docs/components/calendar#business-hours).
 :::
 
 ### Automatic Form Validation
 
-The built-in `EventForm` is fully resource-aware. When you select a resource for an event:
-- The **DatePicker** will automatically disable days that are not working days for that resource.
-- The **TimePicker** will constrain the selectable time range to the resource's specific working hours for that date.
+When `eventConstraint="businessHours"` or `selectConstraint="businessHours"` is enabled, the built-in `EventForm` is resource-aware:
+- The **DatePicker** disables days that are not working days for that resource.
+- The **TimePicker** constrains selectable times to the resource's working hours for that date.
 
 ### Disabling Cells per Resource
 
@@ -407,11 +400,11 @@ Use `isCellDisabled` for ad-hoc, per-resource availability beyond `businessHours
 for example, blocking a room while it's under maintenance. Returning `true` blocks
 event-creation clicks, rejects drag-and-drop onto the cell, and grays it out. It
 receives the same `CellInfo` object, so the full resource is available via
-`info.resource`. The result composes with `businessHours` via OR.
+`info.resource`.
 
 ```tsx title="Per-Resource Availability"
-const unavailable = {
-  'conf-a': [dayjs('2026-06-10')], // Room A out for maintenance
+const unavailable: Record<string, string[]> = {
+  'conf-a': ['2026-06-10'], // Room A out for maintenance
 };
 
 <IlamyCalendar
@@ -420,8 +413,8 @@ const unavailable = {
   isCellDisabled={(info) => {
     const resourceId = info.resource?.id;
     if (!resourceId) return false;
-    const days = unavailable[resourceId] ?? [];
-    return days.some((day) => info.start.isSame(day, 'day'));
+    const days = unavailable[String(resourceId)] ?? [];
+    return days.includes(info.start.slice(0, 10));
   }}
 />
 ```

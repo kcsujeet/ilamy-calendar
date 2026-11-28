@@ -122,10 +122,10 @@ const realFetches = async (grid: CalendarPage) => {
 }
 
 const range = (entry: { start: string; end: string }) =>
-	`${entry.start} > ${entry.end}`
+	`${new Date(entry.start).toISOString()} > ${new Date(entry.end).toISOString()}`
 
 const view = (page: Page, name: 'Day' | 'Week' | 'Month' | 'Year') =>
-	page.getByRole('radio', { name, exact: true }).click()
+	page.getByTestId(`view-btn-${name.toLowerCase()}`).click()
 
 const centre = async (locator: Locator) => {
 	const box = await locator.boundingBox()
@@ -251,6 +251,7 @@ test.describe('persona 1: integrator with a slow API', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
+			plugins: ['year'],
 			settings: SLOW,
 		})
 		const grid = new CalendarPage(page)
@@ -552,7 +553,7 @@ test.describe('persona 3: scheduler editing while loading', () => {
 		await gotoScenario(page, {
 			scenario: 'async-events',
 			view: 'month',
-			settings: { fetch: 'delayed', fetchDelay: 1500 },
+			settings: { fetch: 'delayed', fetchDelay: 1500, editable: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await expect(month.event('Month turn')).toBeVisible({ timeout: 5000 })
@@ -583,7 +584,7 @@ test.describe('persona 3: scheduler editing while loading', () => {
 		await gotoScenario(page, {
 			scenario: 'async-events',
 			view: 'month',
-			settings: { fetch: 'delayed', fetchDelay: 1500 },
+			settings: { fetch: 'delayed', fetchDelay: 1500, editable: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await settled(month)
@@ -611,7 +612,12 @@ test.describe('persona 3: scheduler editing while loading', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { fetch: 'delayed', fetchDelay: 300, scrollTime: '00:00' },
+			settings: {
+				fetch: 'delayed',
+				fetchDelay: 300,
+				scrollTime: '00:00',
+				editable: 'true',
+			},
 		})
 		const grid = new TimeGrid(page)
 		await settled(grid)
@@ -646,7 +652,7 @@ test.describe('persona 3: scheduler editing while loading', () => {
 		await gotoScenario(page, {
 			scenario: 'async-events',
 			view: 'month',
-			settings: { ...SLOW, revertChanges: 'true' },
+			settings: { ...SLOW, revertChanges: 'true', editable: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await expect(month.event('March lunch')).toBeVisible()
@@ -677,7 +683,12 @@ test.describe('persona 3: scheduler editing while loading', () => {
 		await gotoScenario(page, {
 			scenario: 'async-events',
 			view: 'month',
-			settings: { fetch: 'delayed', fetchDelay: 1200, revertChanges: 'true' },
+			settings: {
+				fetch: 'delayed',
+				fetchDelay: 1200,
+				revertChanges: 'true',
+				editable: 'true',
+			},
 		})
 		const month = new MonthGrid(page)
 		await expect(month.event('Month turn')).toBeVisible({ timeout: 5000 })
@@ -844,8 +855,10 @@ test.describe('persona 4: international', () => {
 		const grid = new CalendarPage(page)
 		await settled(grid)
 		await grid.next()
+		await expect.poll(async () => (await realFetches(grid)).length).toBe(2)
 		await settled(grid)
 		await grid.next()
+		await expect.poll(async () => (await realFetches(grid)).length).toBe(3)
 		await settled(grid)
 		expect((await realFetches(grid)).map(range)).toEqual([
 			'2025-03-08T05:00:00.000Z > 2025-03-09T05:00:00.000Z',
@@ -928,7 +941,11 @@ test.describe('persona 5: upgrader with array events', () => {
 	test('array events edited through the UI still behave: drag sticks, nothing fetched', async ({
 		page,
 	}) => {
-		await gotoScenario(page, { scenario: 'async-events', view: 'month' })
+		await gotoScenario(page, {
+			scenario: 'async-events',
+			view: 'month',
+			settings: { editable: 'true' },
+		})
 		const month = new MonthGrid(page)
 		await expect(month.event('March lunch')).toBeVisible()
 		await dragTo(page, month.event('March lunch'), month.cellOn('2025-03-14'))

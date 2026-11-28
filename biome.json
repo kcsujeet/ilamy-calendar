@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
 	"root": true,
 	"vcs": {
 		"enabled": true,
@@ -18,9 +18,7 @@
 		]
 	},
 	"formatter": {
-		"enabled": true,
-		"indentStyle": "tab",
-		"lineWidth": 80
+		"enabled": false
 	},
 	"assist": {
 		"actions": {
@@ -81,14 +79,7 @@
 	},
 	"overrides": [
 		{
-			"includes": [
-				"packages/calendar/src/components/**",
-				"packages/calendar/src/config/**",
-				"packages/calendar/src/hooks/**",
-				"packages/calendar/src/lib/**",
-				"packages/calendar/src/types/**",
-				"packages/calendar/src/utils/**"
-			],
+			"includes": ["packages/calendar/src/**"],
 			"linter": {
 				"rules": {
 					"style": {
@@ -96,12 +87,34 @@
 							"level": "error",
 							"options": {
 								"paths": {
-									"dayjs": "Please use '@/lib/configs/dayjs-config' instead to ensure timezone consistency."
+									"@mui/material": "@ilamy/calendar does not depend on @mui/material; styling recipes live in docs/examples.",
+									"@stylexjs/stylex": "@ilamy/calendar does not depend on @stylexjs/stylex; styling recipes live in docs/examples.",
+									"@dnd-kit/core": "@ilamy/calendar uses its built-in pointer interaction engine, never @dnd-kit.",
+									"@dnd-kit/modifiers": "@ilamy/calendar uses its built-in pointer interaction engine, never @dnd-kit.",
+									"lucide-react": "@ilamy/calendar uses inline SVGs, never lucide-react.",
+									"class-variance-authority": "@ilamy/calendar uses CSS slot attributes, never CVA.",
+									"clsx": "@ilamy/calendar uses simple string concatenation, never clsx.",
+									"tailwind-merge": "@ilamy/calendar uses CSS slot attributes, never tailwind-merge.",
+									"dayjs": "Please use packages/calendar/src/utils/temporal instead."
 								},
 								"patterns": [
 									{
-										"group": ["@/features/*", "@/features/**"],
-										"message": "Shared code cannot import a feature (Bulletproof React: shared -> features -> app). Move this file into the feature, or move what it needs into a shared folder."
+										"group": [
+											"@mui/material/*",
+											"@dnd-kit/*",
+											"@radix-ui/*",
+											"@ilamy/core",
+											"@ilamy/dom",
+											"@ilamy/ui",
+											"@ilamy/ui/*",
+											"@ilamy/utils",
+											"@ilamy/utils/*",
+											"@ilamy/types",
+											"@ilamy/theme-*",
+											"@ilamy/adapter-*",
+											"@ilamy/calendar-*"
+										],
+										"message": "Do not import dropped UI/DnD/theme dependencies or deleted private packages inside @ilamy/calendar."
 									}
 								]
 							}
@@ -111,7 +124,126 @@
 			}
 		},
 		{
-			"includes": ["**/*.astro"],
+			"includes": [
+				"packages/calendar/src/index.ts",
+				"packages/calendar/src/types/**",
+				"packages/calendar/src/utils/**",
+				"packages/calendar/src/lib/**",
+				"!packages/calendar/src/lib/renderer/**",
+				"packages/calendar/src/features/adapters/vue/**",
+				"packages/calendar/src/features/adapters/svelte/**",
+				"packages/calendar/src/features/adapters/solid/**",
+				"packages/calendar/src/features/adapters/angular/**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"paths": {
+									"react": "Framework-free core and non-React adapters cannot import react.",
+									"react-dom": "Framework-free core and non-React adapters cannot import react-dom.",
+									"preact": "Preact must stay inside lib/renderer and never leak into headless core or adapters.",
+									"@dnd-kit/core": "Headless lib and non-React adapters cannot depend on @dnd-kit.",
+									"@dnd-kit/modifiers": "Headless lib and non-React adapters cannot depend on @dnd-kit.",
+									"@mui/material": "@ilamy/calendar does not depend on @mui/material.",
+									"@stylexjs/stylex": "@ilamy/calendar does not depend on @stylexjs/stylex."
+								},
+								"patterns": [
+									{
+										"group": [
+											"react/*",
+											"react-dom/*",
+											"preact/*",
+											"@dnd-kit/*",
+											"@radix-ui/*"
+										],
+										"message": "Preact, React, @dnd-kit, and @radix-ui cannot be imported in headless core or non-React adapters."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"packages/calendar/src/lib/renderer/**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"paths": {
+									"react": "lib/renderer uses Preact, never React.",
+									"react-dom": "lib/renderer uses Preact, never React DOM.",
+									"@dnd-kit/core": "lib/renderer uses lib/interactions, never @dnd-kit.",
+									"@dnd-kit/modifiers": "lib/renderer uses lib/interactions, never @dnd-kit.",
+									"lucide-react": "lib/renderer uses inline SVGs, never lucide-react.",
+									"class-variance-authority": "lib/renderer uses CSS slot attributes, never CVA.",
+									"clsx": "lib/renderer uses simple string concatenation, never clsx.",
+									"tailwind-merge": "lib/renderer uses CSS slot attributes, never tailwind-merge.",
+									"@mui/material": "@ilamy/calendar does not depend on @mui/material.",
+									"@stylexjs/stylex": "@ilamy/calendar does not depend on @stylexjs/stylex."
+								},
+								"patterns": [
+									{
+										"group": [
+											"react/*",
+											"react-dom/*",
+											"@dnd-kit/*",
+											"@radix-ui/*"
+										],
+										"message": "lib/renderer uses internal Preact + semantic native HTML only (zero React, @dnd-kit, or Radix)."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["packages/playground/src/features/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": ["../../../app/*", "../../../app/**"],
+										"message": "Features cannot import from the app layer (Bulletproof React: shared -> features -> app)."
+									},
+									{
+										"group": [
+											"../../calendar-preview/*",
+											"../../calendar-preview/**",
+											"../../code-and-log/*",
+											"../../code-and-log/**",
+											"../../settings/*",
+											"../../settings/**"
+										],
+										"message": "Features cannot import other features directly (Bulletproof React). Compose features in src/app/ or move shared code to src/{components,hooks,lib,types,utils}/."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/*.astro", "**/*.svelte"],
 			"linter": {
 				"rules": {
 					"correctness": {
@@ -122,25 +254,19 @@
 			}
 		},
 		{
-			"includes": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"],
-			"linter": {
-				"rules": {
-					"suspicious": {
-						"noConsole": "off"
-					}
-				}
-			}
-		},
-		{
 			"includes": [
-				"**/src/lib/configs/dayjs-config.ts",
-				"packages/utils/src/dayjs.ts",
-				"packages/types/src/index.ts"
+				"**/*.test.ts",
+				"**/*.test.tsx",
+				"**/*.spec.ts",
+				"**/*.spec.tsx"
 			],
 			"linter": {
 				"rules": {
-					"style": {
-						"noRestrictedImports": "off"
+					"correctness": {
+						"noComponentHookFactories": "off"
+					},
+					"suspicious": {
+						"noConsole": "off"
 					}
 				}
 			}

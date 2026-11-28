@@ -48,6 +48,7 @@ test.describe('titleFormat follows the view range', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'year',
+			plugins: ['year'],
 			settings: { titleFormat: JSON.stringify(format) },
 		})
 

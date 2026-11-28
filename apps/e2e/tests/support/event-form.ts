@@ -5,13 +5,12 @@ import type { Page } from '@playwright/test'
  * its two time pickers. Questions the specs ask, not raw selectors.
  */
 
-export const formDialog = (page: Page) =>
-	page.locator('[data-slot="dialog-content"]')
+export const formDialog = (page: Page) => page.getByTestId('dom-event-dialog')
 
 /** Start Date, then End Date: the two buttons that open a day picker. */
 export const dateButtons = (page: Page) =>
 	page.locator(
-		'form button[data-slot="popover-trigger"]:has(svg.lucide-calendar)'
+		'[data-testid="date-picker-start-date"], [data-testid="date-picker-end-date"]'
 	)
 
 export const allDayBox = (page: Page) => page.locator('form #allDay')
@@ -26,7 +25,7 @@ export const pickTime = async (
 ) => {
 	await page.getByTestId(`time-picker-${which}-time`).click()
 	await page
-		.locator('[data-slot="popover-content"] button', {
+		.locator('[data-ilamy-part="time-picker-list"] button', {
 			hasText: new RegExp(`^${label}$`),
 		})
 		.first()
@@ -36,7 +35,9 @@ export const pickTime = async (
 export const pickDay = async (page: Page, which: 0 | 1, day: number) => {
 	await dateButtons(page).nth(which).click()
 	await page
-		.locator('[data-slot="calendar"] td[data-outside="false"] button')
+		.locator(
+			'[data-slot="calendar"] button[data-day-key]:not([data-outside-month="true"])'
+		)
 		.getByText(String(day), { exact: true })
 		.click()
 	await page.locator('[data-slot="calendar"]').waitFor({ state: 'detached' })

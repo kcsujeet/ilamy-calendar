@@ -17,7 +17,15 @@ import {
  * setting is a query parameter. Any combination is reachable by editing a URL,
  * which is what lets an agent explore states nobody thought to enumerate.
  */
+export type HarnessFramework = 'react' | 'vue' | 'svelte' | 'solid' | 'angular'
+export type HarnessCss = 'unstyled' | 'plain' | 'tailwind' | 'stylex'
+export type HarnessComponents =
+	'native' | 'base-ui' | 'mui' | 'bits-ui' | 'reka-ui'
+
 export interface UrlConfig {
+	framework?: HarnessFramework
+	css?: HarnessCss
+	components?: HarnessComponents
 	slotDuration?: SlotDuration
 	/** With `fetch` set: fetch only when the range leaves the last fetched one. */
 	lazyFetching?: boolean
@@ -45,13 +53,18 @@ export interface UrlConfig {
 	 * from the URL: a drag can then be driven across one.
 	 */
 	businessHours?: BusinessHours
+	eventConstraint?: 'businessHours'
+	selectConstraint?: 'businessHours'
 	stickyViewHeader?: boolean
-	hideExportButton?: boolean
-	disableDragAndDrop?: boolean
 	editable?: boolean
 	eventStartEditable?: boolean
 	eventDurationEditable?: boolean
 	eventResizableFromStart?: boolean
+	unstyled?: boolean
+	/** Harness-only: render two calendars side-by-side in America/New_York and Asia/Tokyo. */
+	multiZone?: boolean
+	/** Harness-only: pass custom slotProps / components to verify v4.0 theming props. */
+	themeVariant?: 'slot-props' | 'custom-button' | 'mui-vars'
 	/** Set from the `eventAllow` parameter, which names a predicate. */
 	eventAllow?: (dropInfo: EventDropInfo) => boolean
 	timeFormat?: TimeFormat
@@ -114,6 +127,8 @@ export interface UrlConfig {
 	 * calendar, it adds or removes a resource the way a consumer's filter does.
 	 */
 	resourceCount?: number
+	/** Harness-only: mount region slot test fixtures (`custom`). */
+	slots?: 'custom'
 }
 
 /** The keys 3.3 added to `Translations`; a 3.2.1 app's object has none of them. */
@@ -139,8 +154,23 @@ const preThreeThreeTranslations = (): Translations => {
 	} as Translations
 }
 
-/** `dayjs().day()` for Sunday and Saturday. */
+/** Sunday (0) and Saturday (6). */
 const WEEKEND_DAYS = [0, 6]
+
+const wallDayOfWeek = (iso: string): number => {
+	const [year, month, day] = iso.slice(0, 10).split('-').map(Number)
+	return new Date(
+		Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1)
+	).getUTCDay()
+}
+
+const wallEndDayOfWeek = (iso: string): number => {
+	const [year, month, day] = iso.slice(0, 10).split('-').map(Number)
+	const isMidnight = /T00:00:00(?:\.0+)?(?:Z|[+-]\d{2}:\d{2})$/.test(iso)
+	return new Date(
+		Date.UTC(year ?? 1970, (month ?? 1) - 1, (day ?? 1) - (isMidnight ? 1 : 0))
+	).getUTCDay()
+}
 
 /**
  * The named `eventAllow` predicates a URL can pick. A URL cannot carry a
@@ -149,14 +179,14 @@ const WEEKEND_DAYS = [0, 6]
 const EVENT_ALLOW_PREDICATES = {
 	/** Refuses any placement that starts on a Saturday or a Sunday. */
 	'no-weekends': (dropInfo: EventDropInfo) =>
-		!WEEKEND_DAYS.includes(dropInfo.start.day()),
+		!WEEKEND_DAYS.includes(wallDayOfWeek(dropInfo.start)),
 	/**
 	 * Refuses any placement whose last covered day is a Saturday or a Sunday.
 	 * `end` is exclusive, so that day is the one before it. The start is left
 	 * alone, which is what lets a resize reach a weekend without moving.
 	 */
 	'no-weekend-end': (dropInfo: EventDropInfo) =>
-		!WEEKEND_DAYS.includes(dropInfo.end.subtract(1, 'millisecond').day()),
+		!WEEKEND_DAYS.includes(wallEndDayOfWeek(dropInfo.end)),
 } as const
 
 /** Raised for a value the URL got wrong, so the harness can show it rather than guess. */
@@ -255,6 +285,36 @@ const WEEK_DAYS: readonly WeekDays[] = [
 export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const config: UrlConfig = {}
 	const get = (key: string) => params.get(key)
+
+	const framework = get('framework')
+	if (framework !== null) {
+		config.framework = oneOf(
+			'framework',
+			framework,
+			['react', 'vue', 'svelte', 'solid', 'angular'] as const,
+			String
+		)
+	}
+
+	const css = get('css')
+	if (css !== null) {
+		config.css = oneOf(
+			'css',
+			css,
+			['unstyled', 'plain', 'tailwind', 'stylex'] as const,
+			String
+		)
+	}
+
+	const components = get('components')
+	if (components !== null) {
+		config.components = oneOf(
+			'components',
+			components,
+			['native', 'base-ui', 'mui', 'bits-ui', 'reka-ui'] as const,
+			String
+		)
+	}
 
 	const slot = get('slot')
 	if (slot !== null) {
@@ -383,21 +443,48 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 		config.stickyViewHeader = boolean('stickyViewHeader', stickyViewHeader)
 	}
 
-	const hideExportButton = get('hideExportButton')
-	if (hideExportButton !== null) {
-		config.hideExportButton = boolean('hideExportButton', hideExportButton)
-	}
-
 	const businessHours = get('businessHours')
 	if (businessHours !== null) {
 		config.businessHours = parseBusinessHours(businessHours)
 	}
 
-	const disableDragAndDrop = get('disableDragAndDrop')
-	if (disableDragAndDrop !== null) {
-		config.disableDragAndDrop = boolean(
-			'disableDragAndDrop',
-			disableDragAndDrop
+	const eventConstraint = get('eventConstraint')
+	if (eventConstraint !== null) {
+		config.eventConstraint = oneOf(
+			'eventConstraint',
+			eventConstraint,
+			['businessHours'] as const,
+			String
+		)
+	}
+
+	const selectConstraint = get('selectConstraint')
+	if (selectConstraint !== null) {
+		config.selectConstraint = oneOf(
+			'selectConstraint',
+			selectConstraint,
+			['businessHours'] as const,
+			String
+		)
+	}
+
+	const unstyled = get('unstyled')
+	if (unstyled !== null) {
+		config.unstyled = boolean('unstyled', unstyled)
+	}
+
+	const multiZone = get('multiZone')
+	if (multiZone !== null) {
+		config.multiZone = boolean('multiZone', multiZone)
+	}
+
+	const themeVariant = get('themeVariant')
+	if (themeVariant !== null) {
+		config.themeVariant = oneOf(
+			'themeVariant',
+			themeVariant,
+			['slot-props', 'custom-button', 'mui-vars'] as const,
+			String
 		)
 	}
 
@@ -562,6 +649,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 			['sticky-title', 'segment-flags'] as const,
 			String
 		)
+	}
+
+	const slots = get('slots')
+	if (slots !== null) {
+		config.slots = oneOf('slots', slots, ['custom'] as const, String)
 	}
 
 	return config

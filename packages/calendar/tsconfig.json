@@ -1,22 +1,13 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
+		"types": ["bun"],
 		"paths": {
-			"@/*": ["./src/*"],
 			"@ilamy/calendar": ["./src/index.ts"],
-			"@ilamy/calendar-agenda": ["../plugins/agenda/src/index.ts"],
-			"@ilamy/calendar-drag-to-create": [
-				"../plugins/drag-to-create/src/index.ts"
-			],
-			"@ilamy/calendar-recurrence": ["../plugins/recurrence/src/index.ts"],
-			"@ilamy/types": ["../types/src/index.ts"],
-			"@ilamy/utils/dayjs": ["../utils/src/dayjs.ts"],
-			"@ilamy/utils/helpers": ["../utils/src/helpers.ts"],
-			"@ilamy/ui/components/*": ["../ui/src/components/*"],
-			"@ilamy/ui/hooks/*": ["../ui/src/hooks/*"],
-			"@ilamy/ui/lib/utils": ["../ui/src/lib/utils.ts"]
+			"@ilamy/calendar/react": ["./src/adapters/react.ts"],
+			"@ilamy/calendar/testing": ["./src/testing/index.tsx"]
 		}
 	},
 	"include": ["**/*.ts", "**/*.tsx"],
-	"exclude": ["dist", "node_modules"]
+	"exclude": ["dist", "dist-*", "node_modules"]
 }

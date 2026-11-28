@@ -1,4 +1,3 @@
-import { dayjs } from '@ilamy/calendar'
 import { PopoverClose } from '@radix-ui/react-popover'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { useRef } from 'react'
@@ -35,6 +34,15 @@ export function DatePicker({
 		}
 	}
 
+	let formattedDate: string | undefined
+	if (date) {
+		formattedDate = new Intl.DateTimeFormat('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+		}).format(date)
+	}
+
 	return (
 		<div className={className}>
 			<Popover>
@@ -47,7 +55,7 @@ export function DatePicker({
 						variant="outline"
 					>
 						<CalendarIcon className="mr-2 h-4 w-4" />
-						{date ? dayjs(date).format('MMM D, YYYY') : <span>{label}</span>}
+						{formattedDate ?? <span>{label}</span>}
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-auto p-0">

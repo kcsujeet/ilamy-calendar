@@ -41,7 +41,15 @@ const open = async (
 	page: Page,
 	options: Parameters<typeof gotoScenario>[1]
 ) => {
-	await gotoScenario(page, options)
+	let plugins = options.plugins
+	if (options.view === 'year') {
+		plugins = [...new Set([...(options.plugins ?? []), 'year'])]
+	}
+	await gotoScenario(page, {
+		...options,
+		plugins,
+		settings: { editable: 'true', ...options.settings },
+	})
 	await settleAnimations(page)
 }
 
@@ -486,8 +494,8 @@ test.describe('persona 2: rota planner (hiddenDays=wednesday)', () => {
 				orientation,
 				settings: ROTA,
 			})
-			const bars = page.getByTestId('horizontal-event-long-res-1')
-			const vbars = page.getByTestId('vertical-event-long-res-1')
+			const bars = page.getByTestId('calendar-event-long-res-1')
+			const vbars = page.getByTestId('calendar-event-long-res-1')
 			console.log(
 				'RES month',
 				orientation,
@@ -523,7 +531,7 @@ test.describe('persona 2: rota planner (hiddenDays=wednesday)', () => {
 			settings: { ...ROTA, granularity: 'daily' },
 		})
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('horizontal-event-res-4').first()
+		const bar = page.getByTestId('calendar-event-res-4').first()
 		await dragTo(page, bar, lane(page, 'r3', '2025-03-11'))
 		await expect
 			.poll(async () => (await grid.eventNamed('Room A, later')).resourceId)
@@ -543,7 +551,7 @@ test.describe('persona 2: rota planner (hiddenDays=wednesday)', () => {
 			settings: { ...ROTA, scrollTime: '12:00' },
 		})
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('vertical-event-res-4').first()
+		const bar = page.getByTestId('calendar-event-res-4').first()
 		// r2, not r3: r3's Tuesday sits within the grid's auto-scroll zone at the
 		// 1280px viewport, so the held pointer scrolls the grid sideways for as
 		// long as the drag lasts and the drop lands on whichever day is under it
@@ -568,7 +576,7 @@ test.describe('persona 2: rota planner (hiddenDays=wednesday)', () => {
 			settings: ROTA,
 		})
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('horizontal-event-res-4').first()
+		const bar = page.getByTestId('calendar-event-res-4').first()
 		await dragTo(page, bar, lane(page, 'r2', '2025-03-10'))
 		await expect
 			.poll(async () => (await grid.eventNamed('Room A, later')).resourceId)
@@ -636,7 +644,7 @@ test.describe('persona 2: rota planner (hiddenDays=wednesday)', () => {
 			view: 'week',
 			settings: { hiddenDays: 'friday', firstDayOfWeek: 'monday' },
 		})
-		await expect(page.getByTestId('horizontal-event-trip-1')).toHaveCount(1)
+		await expect(page.getByTestId('calendar-event-trip-1')).toHaveCount(1)
 	})
 })
 
@@ -893,7 +901,7 @@ test.describe('persona 3: edge-case hunter', () => {
 			view: 'week',
 			settings: { hiddenDays: 'wednesday', eventResizableFromStart: 'true' },
 		})
-		const bar = page.getByTestId('horizontal-event-mid-1')
+		const bar = page.getByTestId('calendar-event-mid-1')
 		await expect(handleOf(bar, 'start')).toHaveCount(0)
 		await expect(handleOf(bar, 'end')).toHaveCount(1)
 		await open(page, {
@@ -902,10 +910,10 @@ test.describe('persona 3: edge-case hunter', () => {
 			settings: { hiddenDays: 'friday', eventResizableFromStart: 'true' },
 		})
 		await expect(
-			handleOf(page.getByTestId('horizontal-event-mid-1'), 'end')
+			handleOf(page.getByTestId('calendar-event-mid-1'), 'end')
 		).toHaveCount(0)
 		await expect(
-			handleOf(page.getByTestId('horizontal-event-mid-1'), 'start')
+			handleOf(page.getByTestId('calendar-event-mid-1'), 'start')
 		).toHaveCount(1)
 	})
 
@@ -1171,7 +1179,7 @@ test.describe('extra probes', () => {
 			orientation: 'vertical',
 			settings: ROTA,
 		})
-		const bar = page.getByTestId('vertical-event-long-res-1')
+		const bar = page.getByTestId('calendar-event-long-res-1')
 		const box = await bar.first().boundingBox()
 		const cell = await lane(page, 'r1', '2025-03-04').boundingBox()
 		console.log(
@@ -1200,7 +1208,7 @@ test.describe('extra probes', () => {
 				eventResizableFromStart: 'true',
 			},
 		})
-		const bar = page.getByTestId('horizontal-event-long-res-1')
+		const bar = page.getByTestId('calendar-event-long-res-1')
 		console.log('RES week daily bars', await bar.count())
 		await expect(handleOf(bar, 'end')).toHaveCount(0)
 		await expect(handleOf(bar, 'start')).toHaveCount(0)
@@ -1300,12 +1308,12 @@ test.describe('extra probes', () => {
 		const dialog = page.getByRole('dialog')
 		console.log('PICKER visible', await dialog.count())
 		const text = await page
-			.locator('[data-slot="popover-content"]')
+			.locator('[data-ilamy-part="popover"]')
 			.first()
 			.innerText()
 		console.log('PICKER', text.replace(/\n/g, ' ').slice(0, 400))
 		const sat = page
-			.locator('[data-slot="popover-content"] button[data-day]')
+			.locator('[data-ilamy-part="popover"] button[data-day-key]')
 			.filter({ hasText: /^15$/ })
 			.first()
 		console.log('SAT15 buttons', await sat.count())

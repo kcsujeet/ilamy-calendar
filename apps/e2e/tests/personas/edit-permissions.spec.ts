@@ -1,11 +1,23 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import {
-	gotoScenario,
+	gotoScenario as gotoRawScenario,
 	releasePointer,
+	type ScenarioOptions,
 	setSettings,
 	waitForDragRender,
 } from '../support/harness'
 import { CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
+
+/**
+ * In v4.0 `editable` defaults to `false` (D8); personas testing dragging opt
+ * into `editable: 'true'` via this wrapper, while persona 1 tests default
+ * `editable` omitted via `gotoRawScenario`.
+ */
+const gotoScenario = (page: Page, options: ScenarioOptions) =>
+	gotoRawScenario(page, {
+		...options,
+		settings: { editable: 'true', ...options.settings },
+	})
 
 /**
  * QA personas for 3.3.2 (editable / eventStartEditable / eventAllow /
@@ -64,16 +76,16 @@ const WEEK_OF_MAR_5 = {
 	date: '2025-03-05T09:00:00.000Z',
 }
 
-test.describe('persona 1: upgrader (disableDragAndDrop=true)', () => {
+test.describe('persona 1: read-only default (editable omitted, D8)', () => {
 	for (const view of ['month', 'week', 'day'] as const) {
 		test(`${view}: nothing drags, no mirror, no drop highlight, no cursor`, async ({
 			page,
 		}) => {
-			await gotoScenario(page, {
+			await gotoRawScenario(page, {
 				scenario: 'edit-permissions',
 				view,
 				date: WEEK_OF_MAR_5.date,
-				settings: { disableDragAndDrop: 'true', scrollTime: '09:00' },
+				settings: { scrollTime: '09:00' },
 			})
 			const grid = view === 'month' ? new MonthGrid(page) : new TimeGrid(page)
 			const bar = grid.event('Free event').first()
@@ -101,10 +113,9 @@ test.describe('persona 1: upgrader (disableDragAndDrop=true)', () => {
 	test('hovering cells with no drag shows no drop highlight', async ({
 		page,
 	}) => {
-		await gotoScenario(page, {
+		await gotoRawScenario(page, {
 			scenario: 'edit-permissions',
 			view: 'month',
-			settings: { disableDragAndDrop: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await month.cellOn('2025-03-07').hover()
@@ -116,10 +127,9 @@ test.describe('persona 1: upgrader (disableDragAndDrop=true)', () => {
 	test('event bars are not draggable (cursor class) but a click still opens the form', async ({
 		page,
 	}) => {
-		await gotoScenario(page, {
+		await gotoRawScenario(page, {
 			scenario: 'edit-permissions',
 			view: 'month',
-			settings: { disableDragAndDrop: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await pointerClick(page, month.event('Free event').first())
@@ -130,25 +140,24 @@ test.describe('persona 1: upgrader (disableDragAndDrop=true)', () => {
 	})
 
 	test('a cell click still opens the create form', async ({ page }) => {
-		await gotoScenario(page, {
+		await gotoRawScenario(page, {
 			scenario: 'edit-permissions',
 			view: 'month',
-			settings: { disableDragAndDrop: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await month.cellOn('2025-03-20').click()
 		await expect(page.getByRole('dialog')).toBeVisible()
 	})
 
-	test('drag-to-create plugin still creates a range under disableDragAndDrop', async ({
+	test('drag-to-create plugin still creates a range when editable is omitted', async ({
 		page,
 	}) => {
-		await gotoScenario(page, {
+		await gotoRawScenario(page, {
 			scenario: 'edit-permissions',
 			view: 'week',
 			date: WEEK_OF_MAR_5.date,
 			plugins: ['drag-to-create'],
-			settings: { disableDragAndDrop: 'true', scrollTime: '09:00' },
+			settings: { scrollTime: '09:00' },
 		})
 		const grid = new TimeGrid(page)
 		const from = grid.slotAt('2025-03-06T13:00')
@@ -158,13 +167,13 @@ test.describe('persona 1: upgrader (disableDragAndDrop=true)', () => {
 		await expect(page.getByRole('dialog')).toBeVisible()
 	})
 
-	test('explicit editable=true wins over disableDragAndDrop=true', async ({
+	test('explicit editable=true enables dragging over the default', async ({
 		page,
 	}) => {
-		await gotoScenario(page, {
+		await gotoRawScenario(page, {
 			scenario: 'basic',
 			view: 'month',
-			settings: { disableDragAndDrop: 'true', editable: 'true' },
+			settings: { editable: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await dragTo(
@@ -354,7 +363,7 @@ test.describe('persona 2: office scheduler', () => {
 const resourceCell = (page: Page, resourceId: string, startPrefix: string) =>
 	page
 		.locator(
-			`.droppable-cell[data-resource-id="${resourceId}"][data-start^="${startPrefix}"]`
+			`[data-cell="true"][data-resource-id="${resourceId}"][data-start^="${startPrefix}"]`
 		)
 		.first()
 
@@ -495,10 +504,14 @@ test.describe('persona 4: edge-case hunter', () => {
 		const grid = new TimeGrid(page)
 		const bar = grid.event('Morning stand-up').first()
 		const satAllDay = page
-			.locator('.droppable-cell[data-all-day="true"][data-start^="2025-03-15"]')
+			.locator(
+				'[data-cell="true"][data-all-day="true"][data-start^="2025-03-15"]'
+			)
 			.first()
 		const friAllDay = page
-			.locator('.droppable-cell[data-all-day="true"][data-start^="2025-03-14"]')
+			.locator(
+				'[data-cell="true"][data-all-day="true"][data-start^="2025-03-14"]'
+			)
 			.first()
 
 		await pressAndMoveTo(page, bar, satAllDay)
@@ -744,13 +757,12 @@ test.describe('persona 4: edge-case hunter', () => {
 		expect((await month.eventNamed('Free event')).start).toMatch(/^2025-03-06/)
 	})
 
-	test('toggling disableDragAndDrop at runtime (deprecated alias) works both ways', async ({
+	test('toggling editable from omitted default to true at runtime works', async ({
 		page,
 	}) => {
-		await gotoScenario(page, {
+		await gotoRawScenario(page, {
 			scenario: 'edit-permissions',
 			view: 'month',
-			settings: { disableDragAndDrop: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await dragTo(
@@ -759,7 +771,7 @@ test.describe('persona 4: edge-case hunter', () => {
 			month.cellOn('2025-03-06')
 		)
 		expect((await month.eventNamed('Free event')).start).toMatch(/^2025-03-05/)
-		await setSettings(page, { disableDragAndDrop: 'false' })
+		await setSettings(page, { editable: 'true' })
 		await dragTo(
 			page,
 			month.event('Free event').first(),
@@ -835,13 +847,12 @@ test.describe('persona 5: touch user (CDP touch events, dnd-kit TouchSensor: 100
 		expect(await month.eventChanges()).toEqual([])
 	})
 
-	test('touch drag under disableDragAndDrop moves nothing', async ({
+	test('touch drag when editable is omitted (D8 default false) moves nothing', async ({
 		page,
 	}) => {
-		await gotoScenario(page, {
+		await gotoRawScenario(page, {
 			scenario: 'edit-permissions',
 			view: 'month',
-			settings: { disableDragAndDrop: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await touchDrag(
@@ -889,7 +900,7 @@ test.describe('persona 6: misc interplay', () => {
 				.first()
 				.evaluate((el) => {
 					const bar = el.closest(
-						'[data-testid^="horizontal-event-"]'
+						'[data-testid^="calendar-event-"]'
 					) as HTMLElement
 					return getComputedStyle(bar.firstElementChild ?? bar).cursor
 				})
@@ -1010,7 +1021,7 @@ test.describe('persona 6: misc interplay', () => {
 		await month.overflowIndicators.first().click()
 		const dialog = page.getByRole('dialog')
 		await expect(dialog).toBeVisible()
-		const first = dialog.getByText(/^Event \d$/).first()
+		const first = dialog.getByText(/Event \d$/).first()
 		await pressAndMoveTo(page, first, month.cellOn('2025-03-20'))
 		await expect(month.dragMirror).toHaveCount(0)
 		await releasePointer(page)
@@ -1029,7 +1040,7 @@ test('control: overflow dialog event is draggable when editable (so the locked v
 	const month = new MonthGrid(page)
 	await month.overflowIndicators.first().click()
 	const dialog = page.getByRole('dialog')
-	const first = dialog.getByText(/^Event \d$/).first()
+	const first = dialog.getByText(/Event \d$/).first()
 	await pressAndMoveTo(page, first, month.cellOn('2025-03-20'))
 	const mirrors = await month.dragMirror.count()
 	console.log(

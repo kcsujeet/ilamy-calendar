@@ -28,7 +28,7 @@ const openExport = async (page: Page, testInfo: TestInfo): Promise<string> => {
 	await gotoScenario(page, {
 		scenario: 'ical-export',
 		view: 'month',
-		plugins: ['recurrence'],
+		plugins: ['recurrence', 'ical'],
 	})
 	return exportIcs(page, testInfo)
 }
@@ -72,12 +72,28 @@ test.describe('iCal export', () => {
 		expect(recurrenceIds).toEqual(['RECURRENCE-ID;VALUE=DATE:20250324'])
 	})
 
-	test('hideExportButton removes the export control', async ({ page }) => {
+	test('export button is absent unless icalPlugin is installed (D7)', async ({
+		page,
+	}) => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { hideExportButton: 'true' },
 		})
 		await expect(page.getByRole('button', { name: /export/i })).toHaveCount(0)
+	})
+
+	test('exports DTSTART;TZID= and VTIMEZONE for a zoned calendar (RFC 5545 §3.6.5)', async ({
+		page,
+	}, testInfo) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			timezone: 'America/New_York',
+			plugins: ['ical'],
+		})
+		const ics = await exportIcs(page, testInfo)
+		expect(ics).toContain('BEGIN:VTIMEZONE')
+		expect(ics).toContain('TZID:America/New_York')
+		expect(ics).toContain('DTSTART;TZID=America/New_York:')
 	})
 })

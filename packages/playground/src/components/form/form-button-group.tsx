@@ -1,5 +1,5 @@
-import { Button } from '@ilamy/ui/components/button'
-import { ButtonGroup } from '@ilamy/ui/components/button-group'
+import { Button } from '../ui/button'
+import { ButtonGroup } from '../ui/button-group'
 import { useController, useFormContext } from 'react-hook-form'
 
 interface FormButtonGroupOption {

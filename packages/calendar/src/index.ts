@@ -1,68 +1,321 @@
-// Plugin slot catalog (host mount points)
+// Temporal date primitives (zero global state, framework-agnostic)
 
-// Shared contract types (slot context shapes, event model, Resource)
-// Plugin SDK contract types
+export {
+	createCalendarController,
+	pickControllerActions,
+} from './lib/controller/core-calendar-controller'
+export {
+	attachCalendarInteractions,
+	type CalendarInteractionConfig,
+	type CalendarInteractionHandle,
+	type CalendarInteractionState,
+	type InteractionMode,
+	type InteractionPreview,
+} from './lib/interactions/calendar-pointer-engine'
+export {
+	type CellSlice,
+	cellElementAt,
+	computeSelectionRange,
+	type DragSelection,
+	findSlotAtPointer,
+	getCellBounds,
+	isSameRegion,
+	type RawCell,
+	readCell,
+	type SlotRectEntry,
+	type SnappedCell,
+	snapCellToPoint,
+} from './lib/interactions/cell-hit-test.utils'
+export {
+	type ConstraintCheckOptions,
+	calculateMovePlacement,
+	calculateResizePlacement,
+	canDragEvent,
+	canResizeEvent,
+	computeGrabOffset,
+	type DragSegment,
+	type GrabOffset,
+	getCellSpan,
+	getDragSegment,
+	getPressedResizeEdge,
+	getResourceUpdates,
+	isPlacementAllowed,
+	isSelectionAllowed,
+	isTimeSlotDrop,
+	NO_GRAB_OFFSET,
+	type PlacementCell,
+	type ResizeEdge,
+	type ResizeGranularity,
+} from './lib/interactions/event-placement.utils'
+export {
+	createPointerGesture,
+	type PointerGestureHandle,
+	type PointerGestureOptions,
+} from './lib/interactions/pointer-gesture'
+export {
+	computeEdgeScroll,
+	type EdgeScrollOptions,
+	exceedsThreshold,
+	intersectRect,
+	type PointerPoint,
+	type Rect,
+	unionRect,
+} from './lib/interactions/rect.utils'
+export { findScrollContainer } from './lib/interactions/scroll.utils'
+export {
+	countAtOrBelow,
+	countBelow,
+	createDayColumnSpanner,
+	createHourColumnSpanner,
+	MS_PER_HOUR,
+	wallClockMs,
+	type ZonedBounds,
+} from './lib/layout/core-layout-columns.utils'
+export {
+	type ColumnSpan,
+	getHorizontalBarStyle,
+	getVerticalBarStyle,
+	type HorizontalCellLayout,
+	type HorizontalPositionedEvent,
+	type VerticalPositionedEvent,
+} from './lib/layout/core-layout-geometry.utils'
+export {
+	type HorizontalLayoutInput,
+	type HorizontalLayoutResult,
+	layoutHorizontal,
+} from './lib/layout/core-layout-horizontal.utils'
+export {
+	layoutVertical,
+	type VerticalLayoutInput,
+} from './lib/layout/core-layout-vertical.utils'
+export { createPluginRuntime } from './lib/plugins/create-plugin-runtime'
+export {
+	type AgendaDayGroup,
+	type AgendaEventEntry,
+	type AgendaStep,
+	type AgendaViewModel,
+	type AgendaWindow,
+	type AgendaZonedRange,
+	type BuildAgendaViewModelInput,
+	buildAgendaViewModel,
+	resolveAgendaWindowRange,
+	resolveAgendaWindowStep,
+} from './lib/view-models/core-agenda-view-model'
+export {
+	type BuildMonthViewModelInput,
+	buildMonthViewModel,
+	type MonthCellViewModel,
+	type MonthViewModel,
+	type MonthWeekViewModel,
+} from './lib/view-models/core-month-view-model'
+export {
+	type BuildResourceTimelineViewModelInput,
+	buildResourceTimelineViewModel,
+	type HourlyTimelineBar,
+	type ResourceTimelineRowViewModel,
+	type ResourceTimelineViewModel,
+	resolveTimelineGranularity,
+	type TimelineGranularity,
+} from './lib/view-models/core-resource-timeline-view-model'
+export {
+	type BuildTimeGridViewModelInput,
+	buildTimeGridViewModel,
+	isAllDayOrMultiDay,
+	type TimeGridColumnViewModel,
+	type TimeGridViewModel,
+} from './lib/view-models/core-time-grid-view-model'
+export {
+	type BuildYearViewModelInput,
+	buildYearViewModel,
+	type YearDayViewModel,
+	type YearMonthViewModel,
+	type YearViewModel,
+	type YearWeekdayHeader,
+} from './lib/view-models/core-year-view-model'
 export type {
 	BusinessHours,
+	CalendarConstraint,
+	CalendarEditFlags,
 	CalendarEvent,
-	ColumnSpec,
+	CalendarEventInput,
+	CalendarOwnerState,
+	CalendarSlotName,
+	CalendarSlotProps,
+	CalendarView,
+	CellInfo,
+	DateRange,
 	EventDelta,
 	EventDropInfo,
-	EventFormSlotContext,
-	EventMutationScopeSlotContext,
+	EventSegment,
 	EventsChange,
-	HorizontalCellSpec,
-	HorizontalRowSpec,
-	IlamyPlugin,
+	EventsFetcher,
+	EventsFetchInfo,
+	HeadlessCalendarActions,
+	HeadlessCalendarController,
+	HeadlessCalendarOptions,
+	HeadlessCalendarState,
+	IsoDateString,
+	NavigationStep,
+	OpenEventFormInput,
 	PluginDateRange,
 	PluginMutationArgs,
 	PluginMutationResult,
-	PluginView,
+	PluginViewRangeSpec,
+	PublicDateInput,
 	Resource,
-	VerticalColumnSpec,
-	ViewConfig,
-	ViewHeaderContext,
-	WeekDays,
-} from '@ilamy/types'
-export type { Dayjs, ManipulateType } from '@ilamy/utils/dayjs'
-// Public dayjs (configured instance) for plugin date math
-export { default as dayjs } from '@ilamy/utils/dayjs'
-export { defaultTranslations } from './config/translations/default'
-// Translation system
-export type {
-	TranslationKey,
-	Translations,
-	TranslatorFunction,
-} from './config/translations/types'
-export {
-	SLOT_EVENT_FORM,
-	SLOT_EVENT_MUTATION_SCOPE,
-} from './features/calendar/components/calendar-slots'
-export type { EventFormProps } from './features/calendar/components/event-form/event-form'
-export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
-// Deprecated alias kept for the beta cycle — IlamyCalendar carries the
-// resource axis directly.
-export {
-	IlamyResourceCalendar,
-	type IlamyResourceCalendarProps,
-} from './features/calendar/components/ilamy-resource-calendar'
-// Public calendar context hooks
-export {
-	type IlamyCalendarApi,
-	useIlamyCalendarContext,
-} from './features/calendar/hooks/use-smart-calendar-context'
-export type {
-	CalendarClassesOverride,
-	CellInfo,
-	EventSegment,
-	EventsFetcher,
-	EventsFetchInfo,
-	IlamyCalendarProps,
-	OpenEventFormInput,
-	RenderCurrentTimeIndicatorProps,
 	ResourcesFetcher,
 	SlotDuration,
+	SlotPropsEntry,
+	SlotStyleProps,
 	SnapDuration,
+	StyleRecord,
+	TimeFormat,
+	ViewConfig,
+	WeekDays,
 	WeekNumberCalculation,
-} from './features/calendar/types'
-export type { CalendarView, TimeFormat } from './types'
+} from './types/calendar.types'
+export {
+	type CalendarPlugin,
+	type CalendarPluginView,
+	type PluginDragToCreateConfig,
+	type PluginEventFormContext,
+	type PluginMutationScopeContext,
+	type PluginRuntime,
+	type PluginSlotName,
+	type PluginToolbarContext,
+	type PluginViewContext,
+	SLOT_EVENT_FORM,
+	SLOT_EVENT_MUTATION_SCOPE,
+	SLOT_TOOLBAR,
+} from './types/plugin.types'
+export type {
+	CalendarClassesOverride,
+	DomCalendarEvent,
+	DomCalendarEventInput,
+	DomCalendarOptions,
+	DomEventFormRenderContext,
+	DomEventRenderContext,
+	DomHeaderRenderContext,
+	DomMutationScope,
+	DomRenderCleanup,
+	DomResourceRenderContext,
+	MountedCalendar,
+	MountedCalendarSnapshot,
+	RenderCurrentTimeIndicatorProps,
+} from './types/renderer.types'
+export type {
+	CalendarSlots,
+	EventFormSlotContext,
+	EventSlotContext,
+	HeaderSlotContext,
+	MoreEventsDialogSlotContext,
+	RecurrenceScope,
+	RecurrenceScopeDialogSlotContext,
+	ResourceSlotContext,
+	SlotContextMap,
+	SlotMount,
+	SlotMountHandle,
+	SlotName,
+	WideCalendarSlotProps,
+} from './types/slot.types'
+export {
+	type BusinessHoursRange,
+	calculateBusinessHoursRange,
+	DEFAULT_BUSINESS_DAYS,
+	type IsBusinessHourOptions,
+	isBusinessDay,
+	isBusinessHour,
+	isRangeWithinBusinessHours,
+} from './utils/core-business-hours.utils'
+export {
+	DAYS_IN_WEEK,
+	type GetDayHoursOptions,
+	getDayHours,
+	getMonthDays,
+	getMonthGridRange,
+	getMonthWeeks,
+	getVisibleDateRange,
+	getWeekDays,
+	HOURS_IN_DAY,
+	isToday,
+	MONTH_GRID_WEEKS,
+	skipHiddenDays,
+	toHiddenDaysSet,
+	WEEK_DAYS_NUMBER_MAP,
+	withoutHiddenDays,
+} from './utils/core-date-grid.utils'
+export {
+	resolveDurationEditable,
+	resolveStartEditable,
+} from './utils/core-editability.utils'
+export {
+	normalizeEvent,
+	normalizeEvents,
+	resolveEventDate,
+} from './utils/core-normalize.utils'
+export {
+	bucketEventsByResource,
+	filterEventsForResource,
+	getEventResourceIds,
+	getResourceEvents,
+	shareInDevBuild,
+} from './utils/core-resource-filter.utils'
+export { isSameResourceList } from './utils/resource-list.utils'
+export {
+	collectResourceBusinessHours,
+	type GetViewHoursOptions,
+	getViewHours,
+	parseSlotRange,
+} from './utils/core-view-hours.utils'
+export {
+	createTranslator,
+	defaultTranslations,
+	type TranslationKey,
+	type Translations,
+	type TranslatorFunction,
+} from './utils/i18n/core-translations'
+export {
+	add,
+	type BoundaryUnit,
+	type DateFields,
+	type DateFieldsInput,
+	type DateInput,
+	type DateUnit,
+	dayKey,
+	diffDayAndTime,
+	elapsedDiff,
+	endOf,
+	formatDate,
+	formatDateRange,
+	fromFields,
+	getFields,
+	getOffsetString,
+	getTransition,
+	getWeekNumber,
+	isAfter,
+	isBefore,
+	isSameDay,
+	isSameInstant,
+	isSameOrAfter,
+	isSameOrBefore,
+	isValidTimeZone,
+	maxDate,
+	minDate,
+	now,
+	offsetMinutes,
+	overlapsRange,
+	parseDate,
+	resolveZone,
+	startOf,
+	subtract,
+	type TimeFieldsInput,
+	toDate,
+	toEpochMs,
+	toOffsetIso,
+	toUtcIso,
+	wallClockDiff,
+	withTime,
+	withZone,
+	type ZonedDate,
+	type ZonedInterval,
+} from './utils/temporal'

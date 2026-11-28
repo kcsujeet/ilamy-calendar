@@ -27,10 +27,14 @@ const openWeek = async (
 const plain = (text: string | null) => text?.replace(/[   ]/g, ' ')
 
 test.describe('formats', () => {
-	test('with no parameter the text is what it always was', async ({ page }) => {
+	test('with no parameter week view shows start and end time by default (D9)', async ({
+		page,
+	}) => {
 		const grid = await openWeek(page, 'short-events')
 
-		await expect(grid.bars('short-2')).toHaveText('Half hour')
+		expect(plain(await grid.bars('short-2').textContent())).toBe(
+			'9:30 – 10:00 AMHalf hour'
+		)
 		await expect(grid.hourLabels.filter({ hasText: /^9 AM$/ })).toHaveCount(1)
 		await expect(page.getByTestId('week-header-weekday-wednesday')).toHaveText(
 			'Wed12'
@@ -38,12 +42,16 @@ test.describe('formats', () => {
 		await expect(grid.title).toHaveText('Mar 9 – 15')
 	})
 
-	test('eventTimeFormat writes the start time on the bar', async ({ page }) => {
+	test('eventTimeFormat writes the formatted time range on the bar in week view (D9)', async ({
+		page,
+	}) => {
 		const grid = await openWeek(page, 'short-events', {
 			eventTimeFormat: TWENTY_FOUR_HOUR,
 		})
 
-		await expect(grid.bars('short-2')).toHaveText('09:30Half hour')
+		expect(plain(await grid.bars('short-2').textContent())).toBe(
+			'09:30 – 10:00Half hour'
+		)
 	})
 
 	test('displayEventTime=false hides it again', async ({ page }) => {
@@ -94,7 +102,9 @@ test.describe('formats', () => {
 		})
 
 		await expect(grid.hourLabels.filter({ hasText: /^09:00$/ })).toHaveCount(1)
-		await expect(grid.bars('short-2')).toHaveText('Half hour')
+		expect(plain(await grid.bars('short-2').textContent())).toBe(
+			'9:30 – 10:00 AMHalf hour'
+		)
 	})
 
 	test('timeFormat decides 12 or 24 hour when the format leaves it open', async ({
@@ -150,7 +160,7 @@ test.describe('formats', () => {
 			settings: { dayHeaderFormat },
 		})
 		await expect(
-			page.getByTestId('resource-week-day-header').nth(3)
+			page.locator('[data-ilamy-part="res-h-day-group"]').nth(3)
 		).toContainText('Wednesday')
 	})
 
@@ -203,7 +213,9 @@ test.describe('formats', () => {
 		})
 
 		await expect(grid.hourLabels.filter({ hasText: /^09:00$/ })).toHaveCount(1)
-		await expect(grid.bars('short-2')).toHaveText('09:30Half hour')
+		expect(plain(await grid.bars('short-2').textContent())).toBe(
+			'09:30–10:00 UhrHalf hour'
+		)
 	})
 
 	test('titleFormat changes the toolbar title', async ({ page }) => {

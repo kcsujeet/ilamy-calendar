@@ -11,7 +11,8 @@ A comprehensive React calendar component with month, week, day, and year views, 
 The Calendar component is the main component for displaying calendar views. It supports various props for customization and event handling. Events should follow the [CalendarEvent interface](#calendarevent-interface).
 
 ```tsx title="Basic Calendar"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import '@ilamy/calendar/styles.css';
 
 const events = [
   {
@@ -43,16 +44,23 @@ function MyCalendar() {
 
 ## Plugins
 
-The v2 core is plugin-agnostic and ships **no plugins by default**. Capabilities like recurring events and the agenda view are opt-in plugins you register through the `plugins` prop. Each plugin is imported from its own subpath so you only ship the code you use.
+The core is plugin-agnostic and ships **no plugins by default**. Capabilities like recurring events, agenda view, year view, iCalendar export, and drag-to-create are opt-in plugins you register through the `plugins` prop. Each plugin is imported from its own subpath so you only ship the code you use.
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence';
 import { agendaPlugin } from '@ilamy/calendar/plugins/agenda';
+import { yearPlugin } from '@ilamy/calendar/plugins/year';
+import { icalPlugin } from '@ilamy/calendar/plugins/ical';
 
 <IlamyCalendar
   events={events}
-  plugins={[recurrencePlugin(), agendaPlugin({ window: 'week' })]}
+  plugins={[
+    recurrencePlugin(),
+    agendaPlugin({ window: 'week' }),
+    yearPlugin(),
+    icalPlugin(),
+  ]}
 />
 ```
 
@@ -61,8 +69,10 @@ import { agendaPlugin } from '@ilamy/calendar/plugins/agenda';
 | `recurrencePlugin()` | `@ilamy/calendar/plugins/recurrence` | RFC 5545 recurring-event expansion, scoped edit/delete, and the `rrule`/`recurrenceId`/`exdates` fields on `CalendarEvent`. See [Recurring Events](/docs/plugins/recurrence). |
 | `agendaPlugin({ window })` | `@ilamy/calendar/plugins/agenda` | An agenda (upcoming-events list) view scoped to a `window` (`'day' \| 'week' \| 'month'`, or a number of days). See [Agenda](/docs/plugins/agenda). |
 | `dragToCreatePlugin({ onSelect })` | `@ilamy/calendar/plugins/drag-to-create` | Drag across empty cells to select a range and open the event form with it. See [Drag to Create](/docs/plugins/drag-to-create). |
+| `yearPlugin()` | `@ilamy/calendar/plugins/year` | 12-month year overview grid. See [Year View](/docs/plugins/year). |
+| `icalPlugin()` | `@ilamy/calendar/plugins/ical` | Header `.ics` export button + `exportToICalendar` / `downloadICalendar` with RFC 5545 `VTIMEZONE` & `TZID`. See [iCalendar Plugin](/docs/plugins/ical). |
 
-The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugins/recurrence`, `@ilamy/calendar/plugins/agenda`, and `@ilamy/calendar/plugins/drag-to-create` (plus `@ilamy/calendar/testing`). Deep imports into the package internals are blocked in v2.
+Valid package entry points are `@ilamy/calendar` (headless core), `@ilamy/calendar/react`, `@ilamy/calendar/vue`, `@ilamy/calendar/svelte`, `@ilamy/calendar/solid`, `@ilamy/calendar/angular`, `@ilamy/calendar/styles.css`, `@ilamy/calendar/styles/base.css`, `@ilamy/calendar/styles/theme.css`, `@ilamy/calendar/testing`, and `@ilamy/calendar/plugins/{recurrence,agenda,drag-to-create,year,ical}`. Deep imports into package internals are blocked.
 
 ## Props
 
@@ -83,53 +93,55 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Resource axis arrangement. Only applies when `resources` is set. |
 | `renderResource` | `(resource: Resource) => ReactNode` | - | Custom renderer for resource header cells. |
 | `weekViewGranularity` | `'hourly' \| 'daily'` | `'hourly'` | Week-view slot granularity when `resources` is set. |
-| `initialView` | `CalendarView` (`'month' \| 'week' \| 'day' \| 'year'`, or a plugin view name) | `'month'` | Sets the initial view when the calendar loads. `CalendarView` is `string` in v2 so plugins can register extra views. |
-| `initialDate` | `dayjs.Dayjs \| Date \| string \| undefined` | `undefined` (today's date) | Sets the initial date displayed when the calendar loads. When undefined, defaults to today's date |
+| `initialView` | `CalendarView` (`'month' \| 'week' \| 'day'`, or a plugin view name such as `'year'` / `'agenda'`) | `'month'` | Sets the initial view when the calendar loads. `CalendarView` is `string` so plugins can register extra views. |
+| `initialDate` | `PublicDateInput` (`string \| Date \| undefined`) | `undefined` (today's date) | Sets the initial date displayed when the calendar loads. When undefined, defaults to today's date |
 | `firstDayOfWeek` | `'sunday' \| 'monday' \| 'tuesday' \| 'wednesday' \| 'thursday' \| 'friday' \| 'saturday'` | `'sunday'` | The first day of the week to display. It decides the week start whatever the `locale` (fr and de weeks start on Monday, ar on Saturday), so set it to match your locale's convention |
 | `dayMaxEvents` | `number` | `4` | Maximum number of events to display in a day cell |
 | `renderEvent` | `(event: CalendarEvent, segment: EventSegment) => ReactNode` | - | Custom function to render individual events. `segment` says which slice of the event this bar is drawing. The agenda plugin calls it once per listed day, for the row's title |
-| `locale` | `string` | `'en'` | Locale for date formatting (e.g., "en", "fr", "de") |
-| `timezone` | `string` | Whatever your local timezone is | Timezone for date handling (e.g., "UTC", "America/New_York") |
+| `locale` | `string` | `'en'` | BCP 47 locale tag for `Intl.DateTimeFormat` formatting (e.g., `"en"`, `"fr"`, `"de"`, `"ja"`) |
+| `timezone` | `string` | Whatever your local timezone is | IANA timezone for date handling (e.g., `"UTC"`, `"America/New_York"`) |
 | `timeFormat` | `'12-hour' \| '24-hour'` | `'12-hour'` | Time format for times in week and day views. `'12-hour'` shows '1:00 PM' (and '1 PM' in the hour gutter); `'24-hour'` shows '13:00' on event bars and in the form, but only the hour ('13') in the gutter |
 | `slotHeaderFormat` | `Intl.DateTimeFormatOptions` | - | How the time-gutter labels are written, in your `locale` and `timezone`, e.g. `{ hour: '2-digit', minute: '2-digit', hour12: false }`. When the options leave out `hour12` and `hourCycle`, a `timeFormat` you passed decides; without one, the locale does. `renderHour` takes precedence. Format strings and functions are not supported. |
-| `eventTimeFormat` | `Intl.DateTimeFormatOptions` | - | How the time on an event bar is written. Setting it shows the time unless `displayEventTime` is `false`. `renderEvent` takes precedence. |
-| `displayEventTime` | `boolean` | Shown only when `eventTimeFormat` is set | Whether the built-in event bar shows the event's time. All-day events never show one. |
-| `displayEventEnd` | `boolean` | `false` | Whether the time on an event bar runs to the end, e.g. `09:30 – 10:30`. |
+| `eventTimeFormat` | `Intl.DateTimeFormatOptions` | - | How the time on an event bar is written. `renderEvent` takes precedence. |
+| `displayEventTime` | `boolean` | `true` | Whether the built-in event bar shows the event's time. All-day events never show one. |
+| `displayEventEnd` | `boolean` | `false` in month, `true` in time-grid | Whether the time on an event bar runs to the end, e.g. `9:30 – 10:30 AM`. |
 | `dayHeaderFormat` | `Intl.DateTimeFormatOptions` | Weekday over day number | How a day header is written, e.g. `{ weekday: 'long' }` gives "Wednesday". When set, the formatted text is the whole header, with no day number added. Applies to week, day, month and resource headers. |
 | `titleFormat` | `Intl.DateTimeFormatOptions` | Per view | How the toolbar title is written, e.g. `{ month: 'long', year: 'numeric' }`. The title is the view's whole range written with `Intl.DateTimeFormat#formatRange`: the first to last day of the month in month view, of the year in year view. |
 | `hideNonBusinessHours` | `boolean` | `false` | Whether to hide hours outside of business hours in day and week views. Requires `businessHours` to be configured. |
 | `slotMinTime` | `string` | `'00:00'` | First visible time in the hour grids (day, week, and resource hour views), `'HH:mm'` or `'HH:mm:ss'`. See [Visible hours](#visible-hours). |
 | `slotMaxTime` | `string` | `'24:00'` | End of the visible time in the hour grids, exclusive, `'HH:mm'` up to `'24:00'`. See [Visible hours](#visible-hours). |
-| `slotDuration` | `15 \| 30 \| 60` | `60` | Granularity of the time grid in minutes for day, week, and resource hour views. `60` shows one row per hour with no sub-hour lines; `30` shows two; `15` shows four with dashed separators. **Note**: in v1.7.0 the day-view and resource-day-vertical defaults flipped from 15-minute to hourly slots; pass `slotDuration={15}` to restore the prior look. |
-| `snapDuration` | `15 \| 30` | the cell's size | The size, in minutes, that a dragged or resized event and a drag-to-create selection snap to. Takes effect only where it is finer than the cell and divides it: with `slotDuration={60}` and `snapDuration={15}` an event dropped halfway down an hour row lands on the half hour. Applies in the vertical time grid and in the horizontal resource timeline, whose columns are hours. Otherwise the cell's size is used, silently. This is decided per cell: `slotDuration={30}` with `snapDuration={30}` is no snap in the vertical grid but snaps to 30 in the hourly horizontal timeline. |
+| `slotDuration` | `15 \| 30 \| 60` | `60` | Granularity of the time grid in minutes for day, week, and resource hour views. `60` shows one row per hour with no sub-hour lines; `30` shows two; `15` shows four with dashed separators. |
+| `snapDuration` | `15 \| 30` | the cell's size | The size, in minutes, that a dragged or resized event and a drag-to-create selection snap to. Takes effect only where it is finer than the cell and divides it: with `slotDuration={60}` and `snapDuration={15}` an event dropped halfway down an hour row lands on the half hour. Applies in the vertical time grid and in the horizontal resource timeline, whose columns are hours. Otherwise the cell's size is used, silently. |
 | `scrollTime` | `string` | - | Initial scroll position for hour-resolution views. Accepts `"HH:mm"` or `"HH:mm:ss"`. Scrolls to the exact minute: `"08:30"` lands halfway into the 8 AM row. Reapplied on navigation, visible hour changes (not a resource added with the same hours), and whenever `scrollTime` changes. Clamps silently to the edge of the nearest visible row when `hideNonBusinessHours` hides the requested hour. Independent of `businessHours`. Requires a fixed calendar height to scroll. |
 | `scrollToNow` | `boolean` | `false` | Open every scrolling grid on the current moment: the current moment (to the minute) in time grids, today's column or row in resource month and daily resource week. Applies only while now is on screen; otherwise falls back to `scrollTime`, or to the start. Reapplied on navigation, visible hour changes, and when the prop changes, not as the clock moves. Requires a fixed calendar height. |
 | `hiddenDays` | `WeekDays[]` | `[]` | Days of the week to hide. A hidden day gets no column or row, in the month, week and day views, with or without `resources`, in every orientation. Not applied to the year view or the agenda view. Hiding all seven days is ignored, with a warning in development. |
 | `weekends` | `boolean` | `true` | `false` hides Saturday and Sunday, the same as adding both to `hiddenDays`. |
 | `allDaySlot` | `boolean` | `true` | Show the all-day row in day, week and resource time grids. `false` removes the row and all-day events are not shown in those views. Month, year and agenda views are unaffected, and horizontal resource timelines have no all-day row to hide. |
-| `nowIndicator` | `boolean` | `true` | Show a line at the current time in time grids. |
+| `nowIndicator` | `boolean` | `false` | Show a line at the current time in time grids (defaults to `false` in v4.0, matching FullCalendar). |
 | `weekNumbers` | `boolean` | - | Unset keeps the default: the week number sits in the corner of the week and resource week headers (the number of the week's first drawn day), and month view shows none. `true` also shows a number at the start of each month row, counted from the row's first day. `false` hides week numbers everywhere. Resource month grids show no week numbers. |
 | `weekNumberCalculation` | `'local' \| 'ISO'` | `'local'` | How a week is counted: the locale's own count, ISO 8601 (week 1 holds the first Thursday; it only changes the number, set `firstDayOfWeek` for Monday weeks). |
 | `stickyViewHeader` | `boolean` | `true` | Whether to stick the view header to the top |
 | `viewHeaderClassName` | `string` | `''` | Custom class name for the view header |
 | `headerComponent` | `ReactNode` | `null` | Custom header component to render above the calendar |
 | `headerClassName` | `string` | `undefined` | Custom class name applied to the calendar header (the toolbar with navigation and view controls). |
-| `hideExportButton` | `boolean` | `false` | Hide the "Export" (.ics download) button in the calendar header. |
 | `renderCurrentTimeIndicator` | `(context: RenderCurrentTimeIndicatorProps) => ReactNode` | - | Custom function to render the current time indicator (line). |
-| `renderHour` | `(date: dayjs.Dayjs) => ReactNode` | - | Custom function to render hour labels in the time gutter of day and week views. Receives a Dayjs object for the hour. |
+| `renderHour` | `(date: IsoDateString) => ReactNode` | - | Custom function to render hour labels in the time gutter of day and week views. Receives an ISO 8601 string for the hour. |
 | `disableCellClick` | `boolean` | `false` | Disable cell click interactions |
 | `disableEventClick` | `boolean` | `false` | Disable event click interactions |
-| `disableDragAndDrop` | `boolean` | `false` | **Deprecated**, use `editable={false}`. Only sets the `editable` default, so an explicit `eventStartEditable` still enables moving |
-| `editable` | `boolean` | `true` | Whether events can be moved and resized. A per-event `editable`, `startEditable` or `durationEditable` overrides it. |
+| `editable` | `boolean` | `false` | Whether events can be moved and resized (defaults to `false` in v4.0, matching FullCalendar). A per-event `editable`, `startEditable` or `durationEditable` overrides it. |
 | `eventStartEditable` | `boolean` | `editable` | Whether events can be moved |
 | `eventDurationEditable` | `boolean` | `editable` | Whether events can be resized by dragging an edge. Resize needs a mouse or pen: on touch-only devices events can be moved but not resized until event selection lands |
 | `eventResizableFromStart` | `boolean` | `false` | Also show a resize handle on the start edge. The end handle shows whenever resizing is allowed |
 | `eventAllow` | `(dropInfo: EventDropInfo, draggedEvent: CalendarEvent) => boolean` | - | Veto a candidate placement while an event is dragged or resized. `dropInfo` is `{ start, end, allDay, resourceId? }`; `draggedEvent` is the event before the drag. Returning `false` shows the not-allowed cursor and a release there changes nothing |
+| `eventConstraint` | `'businessHours'` | `undefined` | Constrains event moves, resizes, and event-form edits to fit inside `businessHours`. |
+| `selectConstraint` | `'businessHours'` | `undefined` | Constrains drag-to-create selections and new-event form bounds to fit inside `businessHours`. |
 | `eventSpacing` | `number` | `1` | Spacing (in pixels) between events in calendar views. Allows customizable gaps between events for better visual clarity. |
 | `eventHeight` | `number` | `24` | Height (in pixels) of event bars in horizontal grid views (month, resource month, resource week horizontal). Increase to show multi-line content like title + time. Does not affect day/week views which scale with event duration. |
-| `businessHours` | `BusinessHours \| BusinessHours[]` | `undefined` | Restrict calendar interactions to specified days and time ranges. Users can only create and edit events within business hours. Supports single object or array for different hours per day. In 4.0 it only shades; see [Business Hours](#business-hours). |
+| `businessHours` | `BusinessHours \| BusinessHours[]` | `undefined` | Shades non-business days and hours (and hides them when `hideNonBusinessHours` is set). Pair with `eventConstraint="businessHours"` and/or `selectConstraint="businessHours"` to enforce them. |
 | `renderEventForm` | `(props: EventFormProps) => ReactNode` | `undefined` | Custom function to render the event form for creating and editing events. When provided, replaces the default event form. |
-| `classesOverride` | `CalendarClassesOverride` | `undefined` | Custom class names to override default styling for various calendar elements, including disabled cells. |
+| `unstyled` | `boolean` | `false` | Disables the default `@layer ilamy.theme` visual styles while preserving structural layout geometry. See [Styling & Themes](/docs/customization/styling). |
+| `slotProps` | `CalendarSlotProps` | `undefined` | Per-slot `{ className, style }` overrides for every semantic calendar part. |
+| `classesOverride` | `CalendarClassesOverride` | `undefined` | Custom class names to override default styling for disabled cells. |
 | `translations` | `Translations` | - | Translations object for internationalization. If both translations and translator are provided, translator takes priority. |
 | `translator` | `TranslatorFunction` | - | Translator function for internationalization. Takes priority over translations object if both are provided. |
 
@@ -138,23 +150,23 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | Prop | Type | Description |
 |------|------|-------------|
 | `onEventClick` | `(event: CalendarEvent) => void` | Called when an event is clicked |
-| `onCellClick` | `(info: CellInfo) => void` | Called when a date cell is clicked. Receives a CellInfo object with start, end, and optional resource (the full resource object in resource calendars). |
-| `isCellDisabled` | `(info: CellInfo) => boolean` | Return `true` to disable a cell: blocks event-creation clicks, rejects drops onto the cell, and grays it out. Composes with `businessHours` via OR (a cell is disabled if business hours OR `isCellDisabled` disables it). |
+| `onCellClick` | `(info: CellInfo) => void` | Called when a date cell is clicked. Receives a `CellInfo` object with `start`, `end` (`IsoDateString`), `allDay`, and optional `resource`. |
+| `isCellDisabled` | `(info: CellInfo) => boolean` | Return `true` to disable a cell: blocks event-creation clicks, rejects drops onto the cell, and grays it out. |
 | `getCellClassName` | `(info: CellInfo) => string` | Return extra CSS classes for a cell from custom logic (unavailability styling, on-call windows, etc.). Receives the same `CellInfo` as `onCellClick`. Unlike `isCellDisabled`, this is purely visual: cells stay clickable and keep accepting drops. Return `''` for cells you do not want to style. |
-| `onMoreEventsClick` | `(day: dayjs.Dayjs, events: CalendarEvent[]) => void` | Called when the "+N more" overflow indicator in a day cell is clicked, receiving the cell's day and its full event list. When provided, it replaces the built-in all-events dialog. See [More Events Overflow](/docs/customization/components#more-events-overflow). |
-| `onViewChange` | `(view: CalendarView) => void` | Called when the calendar view changes. `CalendarView` is `string` in v2, so plugin views (e.g. `'agenda'`) are included |
+| `onMoreEventsClick` | `(day: IsoDateString, events: CalendarEvent[]) => void` | Called when the "+N more" overflow indicator in a day cell is clicked, receiving the cell's day ISO string and its full event list. When provided, it replaces the built-in all-events dialog. See [More Events Overflow](/docs/customization/components#more-events-overflow). |
+| `onViewChange` | `(view: CalendarView) => void` | Called when the calendar view changes. `CalendarView` is `string`, so plugin views (e.g. `'agenda'`, `'year'`) are included |
 | `onEventAdd` | `(event: CalendarEvent) => void` | Called when a new event is created |
 | `onEventUpdate` | `(event: CalendarEvent) => void` | Called when an existing event is updated |
 | `onEventDelete` | `(event: CalendarEvent) => void` | Called when an event is deleted |
 | `onEventsChange` | `(change: EventsChange) => void` | Called once per user action with every stored row it touched (`added`, `updated`, `deleted`), for saving a recurring edit as one unit. The per-row callbacks above still fire. See [onEventsChange](#oneventschange) |
-| `onDateChange` | `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void` | Called when the calendar date changes or the view changes, through the buttons, the date picker or `selectDate`, `nextPeriod`, `prevPeriod`, `today` and `setView` on the ref or the hook. `setCurrentDate` does not call it. The `range` contains the visible date range for the current view. When date and view change together (e.g. clicking a day in the year view), it fires once with the final date and range. |
+| `onDateChange` | `(date: IsoDateString, range: DateRange) => void` | Called when the calendar date changes or the view changes, through the buttons, the date picker or `selectDate`, `nextPeriod`, `prevPeriod`, `today` and `setView` on the ref or the hook. `setCurrentDate` does not call it. The `range` contains the visible date range for the current view (trimmed to visible days when `hiddenDays` is set). When date and view change together (e.g. clicking a day in the year view), it fires once with the final date and range. |
 
 ## Examples
 
 ### With Event Handlers
 
 ```tsx title="Event Handlers Example"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function MyCalendar() {
   const handleEventClick = (event) => {
@@ -165,7 +177,7 @@ function MyCalendar() {
   const handleDateClick = (info) => {
     console.log('Date clicked:', info.start, info.end);
     // Create new event, switch to day view, etc.
-    // info contains: { start: Dayjs, end: Dayjs, resource?: Resource, allDay?: boolean }
+    // info contains: { start: IsoDateString, end: IsoDateString, resource?: Resource, allDay?: boolean }
   };
 
   const handleViewChange = (view) => {
@@ -194,7 +206,7 @@ The calendar supports comprehensive internationalization including locale-based 
 Configure whether times are displayed in 12-hour or 24-hour format in week and day views.
 
 ```tsx title="12-Hour and 24-Hour Time Formats"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function MyCalendar() {
   return (
@@ -220,7 +232,7 @@ function MyCalendar() {
 ### Custom Event Rendering
 
 ```tsx title="Custom Event Renderer"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function CustomCalendar() {
   // `segment` says which slice of the event this bar draws; see
@@ -327,7 +339,7 @@ resource column instead of beside it:
 By default, event bars in month view are 24px tall — enough for a single line of text. Use `eventHeight` to increase the height and show more content, such as a title and time range on separate lines. Pair with `renderEvent` for full control over what's displayed.
 
 ```tsx title="Multi-Line Event Bars"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function MyCalendar() {
   return (
@@ -338,7 +350,8 @@ function MyCalendar() {
         <div className="h-full w-full bg-blue-500 text-white px-1 rounded-md overflow-clip">
           <p className="text-xs font-semibold">{event.title}</p>
           <p className="text-[10px] opacity-80">
-            {event.start.format('h:mm A')} - {event.end.format('h:mm A')}
+            {new Date(event.start).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} –{' '}
+            {new Date(event.end).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
           </p>
         </div>
       )}
@@ -356,7 +369,7 @@ function MyCalendar() {
 Pass a function as `events` and the calendar calls it with the visible range, so you load only what is on screen. In month view the range includes the leading and trailing days of the neighbouring months, and `end` is exclusive.
 
 ```tsx title="Events from an API"
-import { IlamyCalendar, type EventsFetcher } from '@ilamy/calendar';
+import { IlamyCalendar, type EventsFetcher } from '@ilamy/calendar/react';
 import { useState } from 'react';
 
 const fetchEvents: EventsFetcher = async ({ startStr, endStr }, { signal }) => {
@@ -395,7 +408,7 @@ function LoadedCalendar() {
 Pass a `ref` to drive the calendar from your own toolbar, a sidebar or a "jump to" button. `ref.current` is the same object [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context) returns, so the names are the same.
 
 ```tsx title="A toolbar outside the calendar"
-import { IlamyCalendar, type IlamyCalendarApi } from '@ilamy/calendar';
+import { IlamyCalendar, type IlamyCalendarApi } from '@ilamy/calendar/react';
 import { useRef } from 'react';
 
 function Planner() {
@@ -425,7 +438,8 @@ function Planner() {
 ### Initial View and Event Lifecycle
 
 ```tsx title="Advanced Calendar Configuration"
-import { IlamyCalendar, type CalendarEvent, type Dayjs } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import type { CalendarEvent, DateRange, IsoDateString } from '@ilamy/calendar';
 import { useState } from 'react';
 
 function AdvancedCalendar() {
@@ -455,9 +469,9 @@ function AdvancedCalendar() {
     // Delete from your backend API
   };
 
-  const handleDateChange = (date: Dayjs, range: { start: Dayjs; end: Dayjs }) => {
-    console.log('Date changed to:', date.format('YYYY-MM-DD'));
-    console.log('Visible range:', range.start.format('YYYY-MM-DD'), 'to', range.end.format('YYYY-MM-DD'));
+  const handleDateChange = (date: IsoDateString, range: DateRange) => {
+    console.log('Date changed to:', date);
+    console.log('Visible range:', range.start, 'to', range.end);
     // Load events for the visible date range
     // fetchEventsForRange(range.start, range.end);
   };
@@ -507,36 +521,20 @@ Single day view with hourly rows, or finer with `slotDuration={30}` or `{15}`, f
 
 ### Year View
 
-Annual overview showing all 12 months for long-term planning.
+Annual overview showing all 12 months for long-term planning. Provided by the opt-in [`yearPlugin()`](/docs/plugins/year).
 
 ```tsx
-<IlamyCalendar initialView="year" events={events} />
-```
+import { yearPlugin } from '@ilamy/calendar/plugins/year';
 
-```tsx title="Setting Different Initial Views"
-// Month view (default)
-<IlamyCalendar initialView="month" events={events} />
-
-// Week view for detailed scheduling
-<IlamyCalendar initialView="week" events={events} />
-
-// Day view for hourly planning
-<IlamyCalendar initialView="day" events={events} />
-
-// Year view for long-term overview
-<IlamyCalendar initialView="year" events={events} />
+<IlamyCalendar initialView="year" events={events} plugins={[yearPlugin()]} />
 ```
 
 ## Business Hours
 
-Restrict calendar interactions to specific days and time ranges. When configured, users can only create and edit events within business hours. This is particularly useful for appointment booking, scheduling applications, and enforcing availability constraints.
-
-:::caution[Changing in 4.0]
-In 4.0, business hours only shade the closed time (and `hideNonBusinessHours` still hides it); they stop refusing clicks, drops, resizes and drag-to-create, as FullCalendar's `businessHours` does. Restricting becomes opt-in with `eventConstraint="businessHours"` (moves and resizes, the whole event inside business hours) and `selectConstraint="businessHours"` (drag-to-create). Month padding days stop refusing too. The rest of this section describes 3.x, which keeps the restriction. See the [v4 migration notes](https://github.com/kcsujeet/ilamy-calendar/blob/main/docs/migration-v4.md).
-:::
+Shade working days and hours on the calendar grid (and optionally hide closed hours with `hideNonBusinessHours`). Matching FullCalendar, `businessHours` is visual shading by default — to also block moves, resizes, selections, or form edits outside working hours, opt in with `eventConstraint="businessHours"` and/or `selectConstraint="businessHours"`. See the [v4.0 migration guide](/docs/help/migration-to-v4).
 
 ```tsx title="Configuring Business Hours"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function BusinessCalendar() {
   const events = [/* your events */];
@@ -658,7 +656,7 @@ Hide specific weekdays. A hidden day gets no column or row, and the remaining da
 In the day view, previous, next and today skip hidden days, and the view opens on the next visible day when it is given a hidden one. In the week view the title names only the days that are drawn.
 
 ```tsx title="Hiding Weekends"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function BusinessWeekCalendar() {
   return (
@@ -693,11 +691,10 @@ Events that fall on hidden days are not deleted — they simply aren't visible w
 
 ## Moving and resizing events
 
-Events can be dragged to another time, day or resource, and resized by dragging an edge. Both are on by default. `editable` turns them off for the whole calendar, and a flag on one event overrides it.
+Events can be dragged to another time, day or resource, and resized by dragging an edge. Both are **off by default** in v4.0 (matching FullCalendar). Pass `editable` to turn them on for the whole calendar, and a flag on one event overrides it.
 
 ```tsx title="A read-only calendar with one event you can move"
 <IlamyCalendar
-  editable={false}
   events={[
     { id: 'locked', title: 'Booked', start: '2025-03-12T09:00:00.000Z', end: '2025-03-12T10:00:00.000Z' },
     { id: 'free', title: 'Tentative', start: '2025-03-12T11:00:00.000Z', end: '2025-03-12T12:00:00.000Z', editable: true },
@@ -707,17 +704,18 @@ Events can be dragged to another time, day or resource, and resized by dragging 
 
 | Where | Flag | Controls |
 |---|---|---|
-| Calendar | `editable` | Moving and resizing. `disableDragAndDrop` is a deprecated alias of `editable={false}` |
+| Calendar | `editable` | Moving and resizing (`false` by default) |
 | Calendar | `eventStartEditable`, `eventDurationEditable` | Moving, and resizing, on their own. Each beats `editable` |
 | Event | `editable`, `startEditable`, `durationEditable` | The same three, for one event. An event's flag beats the calendar's, and within one level the specific flag beats `editable` |
 
-Drag an event's end edge to change when it ends. Pass `eventResizableFromStart` to show a handle on the start edge as well. Time grids snap the edge to the slot, day grids to whole days. A resize stays in its grid and keeps the event's resource. Resizing needs a mouse or a pen; on a touch screen events can be moved but not resized.
+Drag an event's end edge (revealed with a 3-dot grip on hover) to change when it ends. Pass `eventResizableFromStart` to show a handle on the start edge as well. Time grids snap the edge to the slot, day grids to whole days. A resize stays in its grid and keeps the event's resource. Resizing needs a mouse or a pen; on a touch screen events can be moved but not resized.
 
 `snapDuration` (`15` or `30`) lets a drag, a resize and a [drag-to-create](/docs/plugins/drag-to-create) selection snap finer than the slot. It applies in the vertical time grids and in the horizontal resource timeline. With `slotDuration={60}` and `snapDuration={15}` an event dropped halfway down an hour row lands on the half hour.
 
 ```tsx title="Resizable from both edges, quarter-hour snapping"
 <IlamyCalendar
   events={events}
+  editable
   initialView="week"
   slotDuration={60}
   snapDuration={15}
@@ -728,13 +726,12 @@ Drag an event's end edge to change when it ends. Pass `eventResizableFromStart` 
 `eventAllow` vetoes a placement while an event is dragged or resized, and again when it is dropped. `dropInfo` is `{ start, end, allDay, resourceId? }` and `draggedEvent` is the event before the drag. A refused placement draws no preview and shows the not-allowed cursor, and releasing there changes nothing. It does not apply to the event form or to drag-to-create.
 
 ```tsx title="No placements in the past, and none on a closed room"
-import { dayjs } from '@ilamy/calendar';
-
 <IlamyCalendar
   events={events}
+  editable
   resources={rooms}
   eventAllow={(dropInfo) =>
-    !dropInfo.start.isBefore(dayjs(), 'day') && dropInfo.resourceId !== 'closed-room'
+    new Date(dropInfo.start) >= new Date() && dropInfo.resourceId !== 'closed-room'
   }
 />
 ```
@@ -746,7 +743,7 @@ What a drop does:
 - **A timed event dropped on the all-day row becomes all-day** and covers that one day, ending at the next midnight.
 - **A multi-day all-day event keeps its whole days** when it moves.
 - **Dropping an event where it already is changes nothing.** No callback fires and the recurring scope dialog does not open.
-- **A disabled cell refuses the drop**: a cell outside `businessHours`, or one `isCellDisabled` returns `true` for.
+- **A disabled cell or constraint refuses the drop**: a cell `isCellDisabled` returns `true` for, or outside `businessHours` when `eventConstraint="businessHours"` is set.
 
 An event bar can be focused with the keyboard, and Enter or Space opens it, the same as a click (`onEventClick` runs, and `disableEventClick` is honoured). A key pressed inside your own `renderEvent` content is left to that content. Moving and resizing need a pointer for now.
 
@@ -757,14 +754,12 @@ Six props change how the calendar writes times and dates. Each takes `Intl.DateT
 | Prop | Formats |
 |---|---|
 | `slotHeaderFormat` | The hour labels in the time gutter |
-| `eventTimeFormat` | The time on an event bar. Setting it shows the time |
-| `displayEventTime` / `displayEventEnd` | Whether the bar shows a time, and whether it runs to the end (`9:30 AM – 10:30 AM`) |
+| `eventTimeFormat` | The time on an event bar |
+| `displayEventTime` / `displayEventEnd` | Whether the bar shows a time (`true` by default), and whether it runs to the end (`false` in month, `true` in time-grid by default) |
 | `dayHeaderFormat` | The day headers. The formatted text is the whole header, so `{ weekday: 'long' }` gives "Wednesday" with no day number |
 | `titleFormat` | The title in the header. A week or a custom range is written with `formatRange`; month view formats its first to last day, year view its whole year |
 
 ```tsx title="French week view with 24-hour labels and end times"
-import 'dayjs/locale/fr';
-
 <IlamyCalendar
   events={events}
   initialView="week"
@@ -790,19 +785,26 @@ Only the options object is supported: no format strings or functions. Use `rende
 Customize how hour labels are displayed in the time gutter of day and week views using the `renderHour` prop.
 
 ```tsx title="Custom Hour Labels"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function MyCalendar() {
   return (
     <IlamyCalendar
       events={events}
       initialView="week"
-      renderHour={(date) => (
-        <div className="flex flex-col items-center">
-          <span className="text-sm font-medium">{date.format('h A')}</span>
-          <span className="text-xs text-muted-foreground">{date.format('HH:00')}</span>
-        </div>
-      )}
+      renderHour={(dateIso) => {
+        const d = new Date(dateIso);
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-medium">
+              {d.toLocaleTimeString([], { hour: 'numeric', hour12: true })}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+            </span>
+          </div>
+        );
+      }}
     />
   );
 }
@@ -815,9 +817,10 @@ You can fully customize the "current time" line that appears in day and week vie
 Branch on `axis`: horizontal resource hour grids (resource day/week horizontal) pass `axis === 'horizontal'` and expect a **vertical** line positioned with `left`; vertical day/week grids pass `axis === 'vertical'` and expect a **horizontal** line positioned with `top`. Ignoring `axis` draws a horizontal line in every view, which renders incorrectly in horizontal resource grids.
 
 ```tsx title="Resource-Aware Custom Current Time Indicator"
-import type { RenderCurrentTimeIndicatorProps } from '@ilamy/calendar';
+import type { RenderCurrentTimeIndicatorProps } from '@ilamy/calendar/react';
 
 const CustomIndicator = ({ currentTime, progress, resource, axis }: RenderCurrentTimeIndicatorProps) => {
+  const label = new Date(currentTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   // The indicator renders once per resource row, so show the badge only for the
   // first resource to avoid repeating identical time badges. Non-resource
   // calendars have no `resource`, so the badge still shows there.
@@ -832,7 +835,7 @@ const CustomIndicator = ({ currentTime, progress, resource, axis }: RenderCurren
       >
         {showBadge && (
           <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-b-md">
-            {currentTime.format('h:mm A')}
+            {label}
           </div>
         )}
         <div className="flex-1 bg-red-500" />
@@ -848,7 +851,7 @@ const CustomIndicator = ({ currentTime, progress, resource, axis }: RenderCurren
     >
       {showBadge && (
         <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-r-md">
-          {currentTime.format('h:mm A')}
+          {label}
         </div>
       )}
       <div className="flex-1 bg-red-500" />
@@ -857,6 +860,7 @@ const CustomIndicator = ({ currentTime, progress, resource, axis }: RenderCurren
 };
 
 <IlamyCalendar
+  nowIndicator
   renderCurrentTimeIndicator={(props) => <CustomIndicator {...props} />}
 />
 ```
@@ -865,9 +869,9 @@ const CustomIndicator = ({ currentTime, progress, resource, axis }: RenderCurren
 
 The renderer receives a context object with the following properties:
 
-- `currentTime` - Current date/time as a Dayjs object
-- `rangeStart` - Start of the current view range
-- `rangeEnd` - End of the current view range
+- `currentTime` - Current date/time as an `IsoDateString`
+- `rangeStart` - Start of the current view range (`IsoDateString`)
+- `rangeEnd` - End of the current view range (`IsoDateString`)
 - `progress` - Percentage (0-100) representing the current time's position within the day
 - `resource` - The current resource (in resource calendars)
 - `view` - The active view name ('day' or 'week')
@@ -878,7 +882,8 @@ The renderer receives a context object with the following properties:
 Replace the default event form with your own custom implementation using the `renderEventForm` prop. This gives you full control over the event creation and editing experience.
 
 ```tsx title="Custom Event Form Implementation"
-import { IlamyCalendar, dayjs, type EventFormProps, type CalendarEvent } from '@ilamy/calendar';
+import { IlamyCalendar, type EventFormProps } from '@ilamy/calendar/react';
+import type { CalendarEvent } from '@ilamy/calendar';
 
 const CustomEventForm = ({
   open,
@@ -891,11 +896,12 @@ const CustomEventForm = ({
   if (!open) return null;
 
   const handleSubmit = (formData: FormData) => {
+    const nowIso = new Date().toISOString();
     const eventData: CalendarEvent = {
       id: selectedEvent?.id || `event-${Date.now()}`,
       title: formData.get('title') as string,
-      start: selectedEvent?.start || dayjs(),
-      end: selectedEvent?.end || dayjs(),
+      start: selectedEvent?.start || nowIso,
+      end: selectedEvent?.end || nowIso,
     };
 
     if (selectedEvent?.id) {
@@ -1022,12 +1028,13 @@ With the recurrence plugin, `scope` is a `RecurrenceEditScope` (`'this' | 'follo
 
 Fired when the user navigates to a different date or time period, or when the view changes, and by `selectDate`, `nextPeriod`, `prevPeriod`, `today` and `setView` called from the ref or the hook. It is not fired by `setCurrentDate`, which moves the calendar silently. The second argument provides the visible date range for the current view, enabling efficient data fetching.
 
-**Type:** `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void`
+**Type:** `(date: IsoDateString, range: DateRange) => void`
 
 ### Complete Integration Example
 
 ```tsx title="Full Event Lifecycle Management"
-import { IlamyCalendar, type CalendarEvent, type Dayjs } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import type { CalendarEvent, DateRange, IsoDateString } from '@ilamy/calendar';
 import { useState } from 'react';
 
 function CalendarWithAPI() {
@@ -1104,14 +1111,14 @@ function CalendarWithAPI() {
   };
 
   // Handle date navigation and view changes
-  const handleDateChange = async (date: Dayjs, range: { start: Dayjs; end: Dayjs }) => {
-    console.log('Navigating to:', date.format('YYYY-MM-DD'));
+  const handleDateChange = async (date: IsoDateString, range: DateRange) => {
+    console.log('Navigating to:', date);
 
     // Load events for the visible date range
     try {
       const response = await fetch(
-        '/api/events?start=' + range.start.toISOString() +
-        '&end=' + range.end.toISOString()
+        '/api/events?start=' + encodeURIComponent(range.start) +
+        '&end=' + encodeURIComponent(range.end)
       );
 
       if (response.ok) {
@@ -1169,12 +1176,13 @@ which calls DTEND "the non-inclusive end of the event", and the
 [Google Calendar API](https://developers.google.com/workspace/calendar/api/v3/reference/events).
 :::
 
-```typescript title="CalendarEvent (events prop input)"
+```typescript title="CalendarEvent (events prop input & output)"
 interface CalendarEvent {
   id: string | number;     // Unique identifier for the event
   title: string;           // Display title of the event
-  start: Dayjs | Date | string; // Start (inclusive) — Dayjs, Date, or ISO string
-  end: Dayjs | Date | string;   // End (EXCLUSIVE) — Dayjs, Date, or ISO string
+  start: IsoDateString;    // Start (inclusive) — ISO 8601 string with explicit offset (prop inputs also accept Date)
+  end: IsoDateString;      // End (EXCLUSIVE) — ISO 8601 string with explicit offset (prop inputs also accept Date)
+  timezone?: string;       // Optional per-event IANA timezone (e.g. 'America/New_York')
   description?: string;    // Optional description text
   location?: string;       // Optional location
   uid?: string;            // Optional iCalendar UID (used to group recurring series)
@@ -1190,7 +1198,7 @@ interface CalendarEvent {
 }
 ```
 
-The `events` prop accepts `start` / `end` as a `Dayjs`, a `Date`, or an ISO string; the calendar normalizes them to `Dayjs` internally, so reads from `useIlamyCalendarContext()` always return `Dayjs`. With the recurrence plugin registered, `rrule`, `recurrenceId`, and `exdates` are also available on this type (see [Recurring Events](/docs/plugins/recurrence)).
+The `events` prop accepts `start` / `end` as an ISO 8601 string or a native `Date`; the calendar normalizes them to canonical ISO 8601 strings with explicit offset (`IsoDateString`), so callbacks and `useIlamyCalendarContext()` always return `IsoDateString`. With the recurrence plugin registered, `rrule`, `recurrenceId`, and `exdates` are also available on this type (see [Recurring Events](/docs/plugins/recurrence)).
 
 ### Event Properties Explained
 
@@ -1198,8 +1206,8 @@ The `events` prop accepts `start` / `end` as a `Dayjs`, a `Date`, or an ISO stri
 
 - `id` - Must be unique across all events. Used for drag-and-drop and event updates.
 - `title` - The text displayed on the event in the calendar.
-- `start` - When the event begins. Pass a `Dayjs`, a `Date`, or an ISO string.
-- `end` - When the event ends. Pass a `Dayjs`, a `Date`, or an ISO string.
+- `start` - When the event begins. Pass an ISO 8601 string or a native `Date`.
+- `end` - When the event ends. Pass an ISO 8601 string or a native `Date`.
 
 #### Optional Properties
 
@@ -1336,19 +1344,19 @@ Information passed to the `onCellClick`, `isCellDisabled`, and `getCellClassName
 
 ```typescript title="CellInfo Type Definition"
 interface CellInfo {
-  // Start date/time of the clicked cell
-  start: Dayjs;
+  // Start date/time of the clicked cell (ISO 8601 string with offset)
+  start: IsoDateString;
 
   // End date/time of the clicked cell (exclusive: the next boundary)
-  end: Dayjs;
+  end: IsoDateString;
 
   // Full resource object when clicking a resource calendar cell;
   // undefined in a regular calendar (optional)
   resource?: Resource;
 
-  // Whether the clicked cell is an all-day cell (optional). True for the
-  // all-day row of the week and day views; false for a month cell and for
-  // the time grid
+  // Whether the clicked cell is an all-day cell (optional). True for month
+  // cells, daily resource grids, and the all-day row of week/day views;
+  // false for timed hour-grid cells
   allDay?: boolean;
 }
 ```
@@ -1358,17 +1366,18 @@ interface CellInfo {
 Handle cell clicks with the CellInfo object:
 
 ```typescript
-import { useIlamyCalendarContext, type CellInfo } from '@ilamy/calendar';
+import { useIlamyCalendarContext } from '@ilamy/calendar/react';
+import type { CellInfo } from '@ilamy/calendar';
 
 // Inside a component rendered by the calendar (see useIlamyCalendarContext)
 const { openEventForm } = useIlamyCalendarContext();
 
 const handleCellClick = (info: CellInfo) => {
   const { start, end, resource, allDay } = info;
-  console.log('Cell clicked from', start.format(), 'to', end.format());
+  console.log('Cell clicked from', start, 'to', end);
 
   if (allDay) {
-    console.log('Clicked in all-day row');
+    console.log('Clicked an all-day cell');
   }
 
   // For resource calendars, the full resource object is available
@@ -1390,14 +1399,13 @@ const handleCellClick = (info: CellInfo) => {
 
 Use `isCellDisabled` to block interactions on specific cells (holidays, days off,
 past dates, on-call windows, per-resource availability). Returning `true` blocks
-event-creation clicks, rejects drag-and-drop onto the cell, and grays it out. It
-composes with `businessHours` via OR.
+event-creation clicks, rejects drag-and-drop onto the cell, and grays it out.
 
 ```typescript
-import type { Dayjs } from '@ilamy/calendar';
+import type { IsoDateString } from '@ilamy/calendar';
 
-const isHoliday = (date: Dayjs) =>
-  holidays.some((h) => date.isSame(h, 'day'));
+const isHoliday = (dateIso: IsoDateString) =>
+  holidays.includes(dateIso.slice(0, 10));
 
 <IlamyCalendar
   events={events}
@@ -1413,10 +1421,12 @@ this is purely visual: cells stay clickable and keep accepting drops. Return an
 empty string for cells you do not want to style.
 
 ```typescript
-import type { Dayjs } from '@ilamy/calendar';
+import type { IsoDateString } from '@ilamy/calendar';
 
-const isWeekend = (date: Dayjs) =>
-  date.day() === 0 || date.day() === 6;
+const isWeekend = (dateIso: IsoDateString) => {
+  const day = new Date(dateIso).getDay();
+  return day === 0 || day === 6;
+};
 
 <IlamyCalendar
   events={events}
@@ -1445,7 +1455,7 @@ Currently, `CalendarClassesOverride` only supports customizing disabled cells. I
 Customize the styling of disabled cells:
 
 ```typescript
-import type { CalendarClassesOverride } from '@ilamy/calendar';
+import type { CalendarClassesOverride } from '@ilamy/calendar/react';
 
 const classesOverride: CalendarClassesOverride = {
   disabledCell: 'opacity-30 bg-gray-100 cursor-not-allowed',
@@ -1493,7 +1503,7 @@ interface EventFormProps {
 Implementing a custom event form with EventFormProps:
 
 ```typescript
-import type { EventFormProps } from '@ilamy/calendar';
+import type { EventFormProps } from '@ilamy/calendar/react';
 
 const MyEventForm = (props: EventFormProps) => {
   const { open, selectedEvent, onAdd, onUpdate, onDelete, onClose } = props;

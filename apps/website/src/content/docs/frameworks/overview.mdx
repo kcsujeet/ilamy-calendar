@@ -1,0 +1,222 @@
+---
+title: Multi-Framework Support
+description: Use @ilamy/calendar out of the box in React 19, Vue 3.5, Svelte 5, Solid 2.0, and Angular 22 from one shared headless core and internal Preact renderer.
+slug: docs/frameworks/overview
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+`@ilamy/calendar` v4.0 is built around **one internal Preact renderer and built-in zero-dependency pointer drag/resize engine**, **one framework-agnostic plugin system**, and **one CSS token contract (`--ilamy-*`)** — wrapped symmetrically for **React 19**, **Vue 3.5**, **Svelte 5**, **Solid 2.0**, and **Angular 22**.
+
+Every adapter runs on the exact same TC39 Temporal date core, shared view-model builders, layout engine, internal renderer, and CSS styling contract (`@ilamy/calendar/styles.css`). In React, custom UIs (`slots`, `renderEvent`, `headerComponent`, `renderResource`, `renderEventForm`, `renderHour`, `renderCurrentTimeIndicator`, `onMoreEventsClick`) mount cleanly through React portals while `useIlamyCalendarContext()` and `ref` preserve the React DX. **All adapters import zero `@dnd-kit/*`, zero `@radix-ui/*`, zero `@mui/material` runtime components, and zero Tailwind**, and non-React adapters ship zero React code.
+
+## Entry Points
+
+| Target | Import | Version | What it exports |
+| --- | --- | --- | --- |
+| **Headless Core** | `@ilamy/calendar` | Any JS/TS | `createCalendarController`, Temporal helpers, layout engines, shared view-model builders, `defaultTranslations`, `createTranslator`, shared domain & slot types (`CalendarEvent`, `Resource`, `BusinessHours`, `Translations`, `CalendarPlugin`, `SlotName`, `CalendarSlotProps`, etc.) |
+| **React** | `@ilamy/calendar/react` | React 19.2+ | `<IlamyCalendar />`, `useIlamyCalendarContext`, `SLOT_*`, `IlamyPlugin`, `PluginView` (renders via the internal Preact renderer + React portals for region `slots` and React callbacks) |
+| **Vue** | `@ilamy/calendar/vue` | Vue 3.5+ | `<IlamyCalendar />` component (props, emits, persistent scoped slots `#header`/`#event`/`#resource`/`#eventForm`/`#moreEventsDialog`/`#recurrenceScopeDialog`), `useIlamyCalendar`, `createVueSlotMount` |
+| **Svelte** | `@ilamy/calendar/svelte` | Svelte 5+ | `ilamyCalendar` Svelte 5 Attachment (`{@attach}`), `ilamyCalendarAction` (`use:`), `createIlamyCalendar`, `createSvelteSlotMount`, `mountIlamyCalendar` |
+| **Solid** | `@ilamy/calendar/solid` | Solid 2.0+ | `<IlamyCalendar />` component, `createIlamyCalendar`, `createSolidSlotMount`, `mountSolidCalendar` |
+| **Angular** | `@ilamy/calendar/angular` | Angular 22+ | `registerIlamyCalendarElement`, `IlamyCalendarElement` (`<ilamy-calendar>` Custom Element with `[options]`/`[events]` & typed `CustomEvent`s), `createAngularCalendar`, `mountAngularCalendar` |
+| **Plugins (All Frameworks)** | `@ilamy/calendar/plugins/{recurrence,agenda,year,ical,drag-to-create}` | Any JS/TS | Framework-agnostic plugins (`recurrencePlugin`, `agendaPlugin`, `yearPlugin`, `icalPlugin`, `dragToCreatePlugin`) shared identically across React, Vue, Svelte, Solid, and Angular via `plugins` |
+| **Stylesheets** | `@ilamy/calendar/styles.css`, `./styles/base.css`, `./styles/theme.css` | Pure CSS | Layered CSS (`@layer ilamy.base, ilamy.theme`) with shadcn/Base UI auto-bridging, plus `unstyled` & `--ilamy-*` token hooks for Tailwind, StyleX, and MUI |
+
+## Quick Start by Framework
+
+<Tabs>
+  <TabItem label="React 19">
+    ```tsx
+    import { IlamyCalendar } from '@ilamy/calendar/react'
+    import type { CalendarEvent } from '@ilamy/calendar'
+    import '@ilamy/calendar/styles.css'
+
+    const events: CalendarEvent[] = [
+      {
+        id: '1',
+        title: 'Team Sync',
+        start: '2026-11-19T10:00:00-05:00',
+        end: '2026-11-19T11:00:00-05:00',
+      },
+    ]
+
+    export function CalendarDemo() {
+      return (
+        <div style={{ height: '600px' }}>
+          <IlamyCalendar
+            events={events}
+            timezone="America/New_York"
+            editable
+            nowIndicator
+            onEventsChange={(change) => console.log(change)}
+          />
+        </div>
+      )
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue 3.5">
+    ```vue
+    <script setup lang="ts">
+    import { IlamyCalendar } from '@ilamy/calendar/vue'
+    import { icalPlugin } from '@ilamy/calendar/plugins/ical'
+    import '@ilamy/calendar/styles.css'
+    import { ref } from 'vue'
+
+    const events = ref([
+      {
+        id: '1',
+        title: 'Team Sync',
+        start: '2026-11-19T10:00:00-05:00',
+        end: '2026-11-19T11:00:00-05:00',
+      },
+    ])
+    </script>
+
+    <template>
+      <div style="height: 600px">
+        <IlamyCalendar
+          :events="events"
+          :plugins="[icalPlugin()]"
+          timezone="America/New_York"
+          editable
+          now-indicator
+          @events-change="(change) => console.log(change)"
+        >
+          <template #event="{ event }">
+            <span class="font-semibold">{{ event.title }}</span>
+          </template>
+        </IlamyCalendar>
+      </div>
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Svelte 5">
+    ```svelte
+    <script lang="ts">
+      import { ilamyCalendar } from '@ilamy/calendar/svelte'
+      import { icalPlugin } from '@ilamy/calendar/plugins/ical'
+      import '@ilamy/calendar/styles.css'
+
+      let events = $state([
+        {
+          id: '1',
+          title: 'Team Sync',
+          start: '2026-11-19T10:00:00-05:00',
+          end: '2026-11-19T11:00:00-05:00',
+        },
+      ])
+    </script>
+
+    <div
+      style="height: 600px"
+      {@attach ilamyCalendar({
+        events,
+        plugins: [icalPlugin()],
+        timezone: 'America/New_York',
+        editable: true,
+        nowIndicator: true,
+        onEventsChange: (change) => console.log(change),
+      })}
+    />
+    ```
+  </TabItem>
+  <TabItem label="Solid 2.0">
+    ```tsx
+    import { createSignal } from 'solid-js'
+    import { IlamyCalendar } from '@ilamy/calendar/solid'
+    import { icalPlugin } from '@ilamy/calendar/plugins/ical'
+    import '@ilamy/calendar/styles.css'
+
+    export function CalendarDemo() {
+      const [events] = createSignal([
+        {
+          id: '1',
+          title: 'Team Sync',
+          start: '2026-11-19T10:00:00-05:00',
+          end: '2026-11-19T11:00:00-05:00',
+        },
+      ])
+
+      return (
+        <div style={{ height: '600px' }}>
+          <IlamyCalendar
+            events={events()}
+            plugins={[icalPlugin()]}
+            timezone="America/New_York"
+            editable
+            nowIndicator
+            onEventsChange={(change) => console.log(change)}
+          />
+        </div>
+      )
+    }
+    ```
+  </TabItem>
+  <TabItem label="Angular 22">
+    ```ts
+    import {
+      Component,
+      CUSTOM_ELEMENTS_SCHEMA,
+      computed,
+      signal,
+    } from '@angular/core'
+    import { registerIlamyCalendarElement } from '@ilamy/calendar/angular'
+    import { icalPlugin } from '@ilamy/calendar/plugins/ical'
+    import '@ilamy/calendar/styles.css'
+
+    registerIlamyCalendarElement()
+
+    @Component({
+      selector: 'app-calendar-demo',
+      standalone: true,
+      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      template: `
+        <ilamy-calendar
+          style="display: block; height: 600px"
+          [options]="calendarOptions()"
+          (eventsChange)="onEventsChange($event)"
+        ></ilamy-calendar>
+      `,
+    })
+    export class CalendarDemoComponent {
+      readonly events = signal([
+        {
+          id: '1',
+          title: 'Team Sync',
+          start: '2026-11-19T10:00:00-05:00',
+          end: '2026-11-19T11:00:00-05:00',
+        },
+      ])
+
+      readonly calendarOptions = computed(() => ({
+        events: this.events(),
+        plugins: [icalPlugin()],
+        timezone: 'America/New_York',
+        editable: true,
+        nowIndicator: true,
+      }))
+
+      onEventsChange(event: Event) {
+        console.log((event as CustomEvent).detail)
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Bring Your Own Design System (Every Framework)
+
+Every adapter shares **pure token-based styling** alongside **framework-native region slots**:
+
+### Framework-Agnostic Styling & Token Integration
+
+- **Zero-config layered CSS (`@ilamy/calendar/styles.css`):** Works with zero Tailwind installed and automatically bridges shadcn/Base UI CSS variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`). For Tailwind v4, `@import '@ilamy/calendar/styles.css';` before `@import 'tailwindcss';` requires no `@source` directive.
+- **StyleX & Material UI Tokens:** Pass `--ilamy-*` CSS variables and compiled `stylex.props(...)` or MUI theme palette tokens directly through `slotProps.root` across any framework without any styling wrapper package. See [Styling & Themes](/docs/customization/styling).
+- **Unstyled + `slotProps` + `[data-ilamy-slot]`:** Import `@ilamy/calendar/styles/base.css` (structural layout only) or pass `unstyled: true` with `slotProps` (`root`, `header`, `toolbar`, `navButton`, `viewButton`, `viewButtonActive`, `grid`, `dayHeader`, `cell`, `cellToday`, `cellDisabled`, `cellNonBusiness`, `allDayRow`, `eventBar`, `resizeHandle`, `nowIndicator`, `moreLink`, `resourceHeader`) or override `[data-ilamy-slot="..."]` directly in CSS.
+
+### Custom Region Slots (Base UI, Radix, React Aria, MUI, bits-ui)
+
+- **Zero-dependency native HTML defaults:** Built-in dialogs, popovers, inputs, selects, and checkboxes use semantic native HTML elements styled by `@ilamy/calendar/styles.css` (zero `@radix-ui/*`, zero icon packs, zero `@mui/material` runtime components).
+- **Persistent region slots across every framework:** Plug your own `header`, `event`, `resource`, `eventForm`, `moreEventsDialog`, or `recurrenceScopeDialog` UI via `slots` (`ReactCalendarSlots` portals in React, scoped slots in Vue, `createSvelteSlotMount` / `createSolidSlotMount`, or `SlotMount` objects), while `--ilamy-*` tokens keep theme colors and spacing synchronized automatically. See [Customizing Components](/docs/customization/components).

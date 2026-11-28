@@ -5,9 +5,9 @@ before 4.0, and every name listed under **Removed in 4.0** already works the new
 way in 3.3 and carries a `@deprecated` TSDoc tag, so you can migrate before
 upgrading. Nothing here prints a runtime warning.
 
-The plan behind this list is `docs/roadmap.md` (Release 4.0). Dates in the
-roadmap's open decisions are not fixed until 4.0 starts; the **Under
-consideration** section says which defaults may change.
+The plan behind this list is `docs/roadmap.md` (Release 4.0). All 4.0 design
+decisions (D2, D3, D5, D7–D12) are settled and match FullCalendar's documented
+behaviour.
 
 ## Removed in 4.0
 
@@ -41,24 +41,80 @@ become ISO strings or `Date`.
 Also in 4.0 (not a rename): the context API gains `timezone`, and several zones
 can be shown on one page.
 
-## Under consideration for 4.0
+## Single internal renderer, symmetric imports & CSS entry point
 
-These are open decisions. Each is a default or a behaviour that would change
-output for code that did nothing wrong, so it is decided by the owner when 4.0
-starts. Until then 3.x keeps today's behaviour. The IDs match
-`docs/roadmap.md`.
+In 4.0, `@ilamy/calendar` (root `.`) is the pure headless core (Temporal helpers, controller, interactions, layout, view-models, i18n, and shared domain & slot contracts — zero framework runtime, zero UI, zero CSS). One internal Preact 11 renderer (`packages/calendar/src/lib/renderer/`, never exposed in `.d.ts` or headless core `.`) drives the calendar UI and is wrapped symmetrically by **all five framework adapters** (`@ilamy/calendar/react`, `@ilamy/calendar/vue`, `@ilamy/calendar/svelte`, `@ilamy/calendar/solid`, `@ilamy/calendar/angular`):
 
-| ID | Today (3.x) | Proposed 4.0 | What to do now to be safe |
-|---|---|---|---|
-| D2 | `onEventAdd`, `onEventUpdate`, `onEventDelete` fire one call per row | Possibly removed: `onEventsChange` reports the whole action once and covers them | Prefer `onEventsChange` in new code |
-| D3 | `nowIndicator` defaults to `true` (the current time marker always shows) | Possibly `false`, the convention FullCalendar follows | Pass `nowIndicator` explicitly |
-| D8 | `editable` defaults to `true` | Possibly `false` (read-only unless enabled), the convention | Pass `editable` explicitly |
-| D9 | `displayEventTime` and `displayEventEnd` unset keep today's title-only bars | Possibly default `true`, the convention | Pass both explicitly |
-| D10 | `onDateChange` and the `currentRange` keep the range as it was before `hiddenDays` and `weekends` existed | Possibly trimmed to the days actually drawn | Do not depend on the range including hidden days |
-| D11 | Month cells report `allDay: false` in `onCellClick` and in a drag-to-create selection, and a form opened from one is timed | Possibly `true`, so a month click or selection reports and creates an all-day event, as FullCalendar's day grid does (`DayGridRows.tsx:256`, v7.1.1) | Do not rely on `allDay` being `false` for a month cell; read `view` as well |
-| D7 | iCal export and the year view are built into the core | Possibly moved to plugins (`plugins/ical`, `plugins/year`); the resource axis only if the plugin contract carries it cleanly | Nothing yet; imports will change if it happens |
+```diff
+- import { IlamyCalendar, useIlamyCalendarContext } from '@ilamy/calendar'
++ import { IlamyCalendar, useIlamyCalendarContext } from '@ilamy/calendar/react'
++ import '@ilamy/calendar/styles.css'
+```
 
-## Default changes planned for 4.0
+- **React adapter (`@ilamy/calendar/react`):** Wraps the internal Preact renderer and mounts region `slots` and React render callbacks (`renderEvent`, `headerComponent`, `renderEventForm`, `renderResource`, `renderHour`, `renderCurrentTimeIndicator`, `onMoreEventsClick`) via `ReactDOM.createPortal`, with `useSyncExternalStore` + Context powering `useIlamyCalendarContext()` and `ref`.
+- **Unified drag-and-drop & resize:** Built into `lib/interactions/`'s single zero-dependency pointer engine across every framework. `@dnd-kit/core` and `@dnd-kit/modifiers` are completely removed.
+- **Framework-agnostic plugins:** `@ilamy/calendar/plugins/{recurrence,agenda,year,ical,drag-to-create}` implement a single framework-agnostic `CalendarPlugin` contract and work identically across React, Vue, Svelte, Solid, and Angular.
+
+If you used Tailwind v4's `@source` directive for `@ilamy/calendar/dist`, remove it — Tailwind is no longer required:
+
+```diff
+  @import 'tailwindcss';
+- @source "../node_modules/@ilamy/calendar/dist";
+```
+
+## Zero UI-library dependencies & region slots (#401)
+
+`@ilamy/calendar` removes all third-party UI and drag dependencies: `@radix-ui/*`, `@dnd-kit/core`, `@dnd-kit/modifiers`, `@mui/material`, `@stylexjs/stylex`, `class-variance-authority` (`cva`), `clsx`, `tailwind-merge`, `lucide-react`, and unreleased `CalendarComponents` overrides are all gone.
+
+- **Single native HTML defaults:** The internal renderer renders accessible native HTML primitives (`<dialog>`, `<button>`, `<input>`, `<textarea>`, `<select>`, `<input type="checkbox">`, `<label>`) and inline SVG icons, styled directly by `@ilamy/calendar/styles.css` (zero Tailwind required).
+- **Custom UI via region `slots` & CSS tokens:** Plug in **shadcn with Base UI (#401)**, **Radix**, **MUI**, **bits-ui**, **React Aria**, or your own components via region-level `slots` (`header`, `event`, `resource`, `eventForm`, `moreEventsDialog`, `recurrenceScopeDialog` — or React portal callbacks like `renderEventForm` and `headerComponent`), while `@ilamy/calendar/styles.css` auto-bridges shadcn/Tailwind variables or takes `--ilamy-*` / `slotProps` overrides.
+
+## Runtime dependencies & optional peers
+
+`temporal-polyfill` and internal `preact` (`11.2.0`, never leaked into public `.d.ts` or headless core `.`) are the only runtime `dependencies` of `@ilamy/calendar`. Everything else is an optional `peerDependency` installed only for what you use (zero `@dnd-kit/*`, zero `@mui/material`, and zero `@stylexjs/stylex` peers):
+
+- **Framework runtimes:** `react` & `react-dom`, `vue`, `svelte`, `solid-js`, or `@angular/core`
+- **Recurrence:** `rrule` (only needed when using `@ilamy/calendar/plugins/recurrence`)
+- **Tailwind:** `tailwindcss` (optional; `@ilamy/calendar/styles.css` works standalone with zero Tailwind)
+
+## Direct CSS & token styling
+
+v4 ships zero UI-component or CSS-in-JS adapter subpaths (`@ilamy/calendar/styles/stylex`, `./styles/mui`, `./themes/*`, and `./react/mui` were never shipped in 3.x and are removed in 4.0); every styling integration uses standard CSS stylesheets and `slotProps` across all five frameworks:
+
+- `@ilamy/calendar/styles.css` — combined `@layer ilamy.base, ilamy.theme` stylesheet (auto-bridges shadcn `--background`, `--foreground`, `--primary`, `--muted`, `--border`, `--radius`, and `.dark` CSS variables when present — works with Base UI #401, Radix, React Aria, shadcn-vue, shadcn-svelte, and plain CSS)
+- `@ilamy/calendar/styles/base.css` — structural layout only (`@layer ilamy.base`)
+- `@ilamy/calendar/styles/theme.css` — default visual theme layer only (`@layer ilamy.theme`)
+- **StyleX / MUI / Tailwind recipes:** Pass `--ilamy-*` CSS variables via `slotProps.root` or pass `unstyled` with Tailwind utility `slotProps.className` (see website Styling docs)
+
+## Moved to plugins in 4.0
+
+- **Year view (`plugins/year`) and iCal export (`plugins/ical`)** move out of
+  core into plugins (D7), matching FullCalendar (`multimonth`, `icalendar`).
+  `onEventAdd`, `onEventUpdate` and `onEventDelete` are **kept** alongside
+  `onEventsChange` (D2), matching FullCalendar (`eventAdd`, `eventChange`,
+  `eventRemove` alongside `eventsSet`).
+
+## Default changes in 4.0
+
+- **`nowIndicator` defaults to `false`** (D3; was `true` in 3.x), matching
+  FullCalendar (`https://fullcalendar.io/docs/nowIndicator`). Pass
+  `nowIndicator` to show the current-time line.
+- **`editable` defaults to `false`** (D8; was `true` in 3.x), matching
+  FullCalendar (`https://fullcalendar.io/docs/editable`). Pass `editable` to
+  enable drag and resize.
+- **`displayEventTime` and `displayEventEnd` defaults** (D9; were off unless
+  set or `eventTimeFormat` was passed in 3.x): `displayEventTime` defaults to
+  `true`, and `displayEventEnd` defaults to `false` in month view and `true`
+  in week/day time-grid views, matching FullCalendar
+  (`https://fullcalendar.io/docs/displayEventTime`, `displayEventEnd`).
+- **`onDateChange` and `currentRange` trim to drawn days** when `hiddenDays`
+  or `weekends` hide days (D10; 3.x kept the full un-trimmed range), matching
+  FullCalendar's `activeStart` / exclusive `activeEnd` on `datesSet`
+  (`https://fullcalendar.io/docs/datesSet`, `view-object`).
+- **Month cells report `allDay: true`** in `onCellClick` and drag-to-create
+  selections, and a form opened from one defaults to all-day (D11; was
+  `allDay: false` in 3.x), matching FullCalendar's day grid
+  (`https://fullcalendar.io/docs/dateClick`, `DayGridRows.tsx:256`, v7.1.1).
 
 - **`BusinessHours.daysOfWeek` defaults to Monday to Friday.** In 3.x a
   `BusinessHours` without `daysOfWeek` applies to every day, weekends included
@@ -147,17 +203,22 @@ starts. Until then 3.x keeps today's behaviour. The IDs match
 1. On the latest 3.x, search your code for the names in the first table and move
    each to its replacement. A `@deprecated` tag makes editors strike them
    through.
-2. Pass explicitly any option listed under **Under consideration** whose
-   default you rely on.
-3. If you use `BusinessHours`, add `daysOfWeek` wherever you rely on the
+2. Update React imports from `@ilamy/calendar` to `@ilamy/calendar/react`, add
+   `import '@ilamy/calendar/styles.css'`, and remove any `@source` rule pointing
+   at `@ilamy/calendar/dist`.
+3. Remove `@dnd-kit/core` and `@dnd-kit/modifiers` if you only had them for `@ilamy/calendar` (drag and resize now use `lib/interactions`'s built-in pointer engine), and install `rrule` only if you use `@ilamy/calendar/plugins/recurrence`.
+4. Style via CSS tokens (`@ilamy/calendar/styles.css`), `unstyled` + `slotProps`, and `--ilamy-*` variables, and integrate custom dialogs/headers/events/resources via region `slots` (`header`, `event`, `resource`, `eventForm`, `moreEventsDialog`, `recurrenceScopeDialog`) or React portal callbacks (`renderEventForm`, `headerComponent`, `renderEvent`, `renderResource`, `onMoreEventsClick`).
+5. Pass `nowIndicator`, `editable`, `displayEventTime` and `displayEventEnd`
+   explicitly if you want the 3.x defaults.
+6. If you use `BusinessHours`, add `daysOfWeek` wherever you rely on the
    seven-day default.
-4. If you use `businessHours` to stop people booking closed time, add
+7. If you use `businessHours` to stop people booking closed time, add
    `eventConstraint="businessHours"` and `selectConstraint="businessHours"`
    when you upgrade; without them 4.0 only shades the closed time. If you
    relied on month padding days refusing drops, refuse them in `isCellDisabled`.
-5. Wrap `dayjs`/`Dayjs` usage at your boundaries so dates cross them as ISO
+8. Wrap `dayjs`/`Dayjs` usage at your boundaries so dates cross them as ISO
    strings.
-
-This file grows with each decision: a row moves from **Under consideration** to
-**Removed in 4.0** or **Default changes** (or is dropped) when the owner
-settles it.
+9. Update imports for the year view (`@ilamy/calendar/plugins/year`) and iCal
+   export (`@ilamy/calendar/plugins/ical`).
+10. Do not rely on `onDateChange`/`currentRange` including hidden days or on
+    month cell clicks reporting `allDay: false`.

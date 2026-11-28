@@ -105,19 +105,15 @@ These are non-negotiable. Violating any of these is a bug.
 - ALWAYS read all the docs in `docs/` (every `.md` file; `docs/logs/` is covered
   under Session Start) before changing code. They hold contracts and known gaps
   the code does not show, and they are what stops a fix from contradicting an
-  earlier decision. In particular, `docs/timezones.md` records a known gap that
-  matters on any date or time work: dayjs still reads zoned dates through the
-  machine's zone, so a bug can appear only on a machine whose own clocks
-  change. The decided fix is a Temporal migration (with `temporal-polyfill`)
-  in the next major, and it is required. Until then, do not pile more patches
-  onto `packages/utils/src/dayjs.ts` without raising it with the user first,
-  and reproduce date bugs with the machine zone set (Playwright `timezoneId`,
-  or a child process with `TZ`), not only in UTC.
+  earlier decision. Date and timezone operations run on TC39 Temporal
+  (`packages/calendar/src/utils/temporal.ts`, backed by `temporal-polyfill/fns/*`) with zero
+  module-global timezone state; still reproduce date bugs with the machine zone
+  set (Playwright `timezoneId`, or a child process with `TZ`), not only in UTC.
 - NEVER use npm/node/pnpm as the package manager or runtime. Always use `bun` (invoke tools via `bunx`, e.g. the demo dev server runs `bunx vite`).
 - ALWAYS use the latest published version when adding a dependency. Check `npm view <pkg> version` for the true latest — never copy version numbers from existing in-repo examples or from memory. Verify peer/engine compatibility and confirm the new major has no breaking changes for the APIs used (per the docs-first rule).
-- NEVER use `YYYY-MM-DD` format for storage/transmission. Always use ISO strings.
-- NEVER import dayjs directly. Always import the configured instance from `@ilamy/utils/dayjs`.
-- NEVER import `datetime` from rrule. Use dayjs.
+- NEVER use `YYYY-MM-DD` format for storage/transmission. Always use ISO 8601 strings with explicit offset.
+- NEVER use `dayjs`. Always use `packages/calendar/src/utils/temporal.ts` (`ZonedDate`, `parseDate`, `toOffsetIso`, etc.).
+- NEVER import `datetime` from rrule. Use `packages/calendar/src/utils/temporal.ts`.
 - NEVER add Claude/AI as co-author in commits.
 - NEVER commit directly to main. Use feature branches.
 - ALWAYS update the dev log (`docs/logs/`) after making any codebase changes. This is mandatory — not optional. See "Development Logs" section below. Review-only sessions (no `src/` changes) don't require a log entry — the stop hook (`.claude/hooks/check-dev-log.sh`) checks `git diff --quiet HEAD -- src` and skips for clean trees.
@@ -189,14 +185,14 @@ bun run test                       # All tests (fans out per package via --filte
 # bunfig happy-dom preload and fails en masse. Inside a package it's fine.
 bun test --coverage                # Tests with coverage (run inside a package)
 bun run lint                       # Lint (Biome)
-bun run lint:fix                   # Fix lint issues
-bun run format:check               # Check formatting (Biome)
-bun run format                     # Fix formatting
-bun run check:fix                  # Combined lint + format fixes
+bun run lint:fix                   # Fix lint issues (Biome)
+bun run format:check               # Check formatting (bun fmt --check)
+bun run format                     # Fix formatting (bun fmt)
+bun run check:fix                  # Combined format (bun fmt) + lint (Biome) fixes
 bun run pre-commit                 # = check:fix
 bun run build                      # Production build (bunup)
-bun run type-check                 # TypeScript check
-bun run check:dist-types           # Strict tsc over the BUILT dist/*.d.ts (run after build)
+bun run type-check                 # TypeScript check (bun check across workspaces + astro check)
+bun run check:dist-types           # Strict bun check over the BUILT dist/*.d.ts (run after build)
 bun run ci                         # Full CI: check + build + check:dist-types + type-check + test
 
 # Match the CI gate locally (Fallow static analysis; CI runs fallow-rs/fallow@v3
@@ -249,8 +245,7 @@ split the calendar context so a plugin could not see its provider.
 The fix is a clean regeneration, and it is the first thing to try, not the last:
 
 ```bash
-rm -rf node_modules apps/*/node_modules packages/*/node_modules \
-       packages/plugins/*/node_modules bun.lock
+rm -rf node_modules apps/*/node_modules packages/*/node_modules bun.lock
 bun install
 ```
 
@@ -259,45 +254,58 @@ part of this.
 
 ## Architecture
 
-React calendar component library. TypeScript, Shadcn-UI, Tailwind CSS, @dnd-kit, rrule.js.
+Single internal Preact 11 renderer (`packages/calendar/src/lib/renderer/`, never leaked into public `.d.ts`) powered by a headless calendar engine with TC39 Temporal timezones and layered CSS tokens (`--ilamy-*`), wrapped symmetrically by React 19, Vue 3.5+, Svelte 5, Solid 2.0, and Angular 22. Framework-agnostic plugins (`./plugins/*`) and pure CSS / `slotProps` styling work identically across every adapter. Zero Tailwind, Radix, `@dnd-kit`, MUI runtime components, CVA, clsx, tailwind-merge, or lucide-react in `@ilamy/calendar`.
 
 ### Monorepo layout (Bun workspaces)
 
-**Only `@ilamy/calendar` is published.** It's a monorepo for development, but at build time the internal packages are bundled into the single `@ilamy/calendar` package; the others are `private: true`.
+**2 workspace packages (`packages/calendar` and `packages/playground`); only `@ilamy/calendar` is published.** All library source lives inside `packages/calendar/src/` following a **fractal Bulletproof React** architecture (`config/`, `types/`, `utils/`, `lib/{controller,interactions,layout,plugins,view-models,renderer}` -> isolated `features/{adapters,plugins}`), with strict unidirectional layer boundaries and zero relative cross-feature imports enforced by Biome `noRestrictedImports` (plugins import only top-level `types/`, `utils/`, `lib/` — never React or `features/adapters/*`).
 
 ```
 packages/
-  types/        @ilamy/types        (private)  shared plugin-contract types (no runtime)
-  utils/        @ilamy/utils        (private)  configured dayjs (./dayjs) + helpers (./helpers: safeDate, overlapsRange, …)
-  ui/           @ilamy/ui           (private)  shadcn primitives
-  playground/   @ilamy/playground   (private)  shared interactive demo UI, source-only; consumed by apps/demo + apps/website
-  plugins/
-    recurrence/     @ilamy/calendar-recurrence     (private)  RFC 5545 recurrence plugin
-    agenda/         @ilamy/calendar-agenda         (private)  agenda view plugin
-    drag-to-create/ @ilamy/calendar-drag-to-create (private)  drag-to-create plugin
-  calendar/     @ilamy/calendar     (PUBLISHED) the core; bundles the internal packages above
+  calendar/       @ilamy/calendar     (PUBLISHED)  library source + layered CSS (`styles/`)
+    src/
+      index.ts    .                   headless core entry (exports `types/`, `utils/`, `lib/{controller,interactions,layout,plugins,view-models}/`, `config/`; zero UI/framework/DOM/CSS)
+      config/                         shared configuration
+      types/                          canonical `CalendarEvent`, `Resource`, `BusinessHours`, `SlotName`, `CalendarSlotProps`, plugin contracts
+      utils/                          `temporal.ts` (TC39 Temporal), `helpers.ts` (shared pure helpers), `i18n/`
+      lib/
+        controller/                   headless calendar controller
+        interactions/                 zero-dependency pointer DnD/resize engine
+        layout/                       grid & event layout algorithms
+        plugins/                      framework-agnostic plugin runtime (`createPluginRuntime`)
+        view-models/                  view-model builders
+        renderer/                     internal Preact 11 renderer (`index.ts`, `app/`, `components/`, `types/`, `utils/`, `features/{header,dialogs,views}`; wrapped by ALL 5 frameworks, never exported publicly)
+      features/                       independent vertical features (ZERO relative cross-feature imports)
+        adapters/
+          react/  ./react             thin React 19 wrapper over `lib/renderer` + `lib/controller` via `ReactDOM.createPortal` (for region `slots` plus `renderEvent`, `headerComponent`, `renderResource`, `renderEventForm`, `renderHour`, `renderCurrentTimeIndicator`, `onMoreEventsClick`) and `useSyncExternalStore` + React Context (`useIlamyCalendarContext()`, `ref`); `testing/` → `./testing`
+          vue/    ./vue               thin symmetric Vue 3.5+ wrapper over `lib/renderer` + `lib/controller`
+          svelte/ ./svelte            thin symmetric Svelte 5 wrapper over `lib/renderer` + `lib/controller`
+          solid/  ./solid             thin symmetric Solid 2.0 wrapper over `lib/renderer` + `lib/controller`
+          angular/ ./angular          thin symmetric Angular 22 wrapper (`<ilamy-calendar>`) over `lib/renderer` + `lib/controller`
+        plugins/  ./plugins/*         `recurrence`, `agenda`, `year`, `ical`, `drag-to-create` — framework-agnostic plugins working identically across React, Vue, Svelte, Solid, and Angular (zero React imports; import only top-level `types/`, `utils/`, `lib/`)
+    styles/                           `base.css`, `theme.css` (`./styles.css`, `./styles/base.css`, `./styles/theme.css` — covers grid, header, dialogs, popovers, inputs, selects, checkboxes; auto-bridges shadcn/Tailwind vars; 100% zero-Tailwind)
+  playground/     @ilamy/playground   (private)  shared 3-axis (Framework × CSS × Components) demo UI for `apps/demo` & `apps/website` (textbook Bulletproof React: `app/`, `components/{form,ui}`, `features/`, `hooks/`, `lib/`, `types/`, `utils/`; demo-only shadcn chrome in `src/components/ui/`)
 apps/
-  demo/         @ilamy/demo         (private)  Vite demo app; consumes @ilamy/calendar's public API
-  website/      @ilamy/website      (private)  docs website (deployed via `bun run deploy:website`)
-examples/       standalone consumer apps (astro, nextjs, vite) depending on the published package
+  demo/           @ilamy/demo         (private)  Vite demo app; consumes `@ilamy/calendar`'s public API
+  website/        @ilamy/website      (private)  docs website (deployed via `bun run deploy:website`)
+examples/         standalone consumer apps (astro, nextjs, vite) depending on the published package
 ```
 
-`@ilamy/calendar` ships these entry points: `.` (core), `./testing` (test harness), `./plugins/recurrence`, `./plugins/agenda`, `./plugins/drag-to-create`. The plugin subpaths' `import … from '@ilamy/calendar'` self-references the same package at runtime. **It ships no CSS** — "bring your own design system": components use the conventional shadcn token classes, and consumers `@source` the package's `dist` so Tailwind generates the utilities, styled by their own tokens. The demo (`apps/demo/src/styles/globals.css`) is the reference consumer that supplies a shadcn theme.
+`@ilamy/calendar` ships these entry points (`motion` pattern): `.` (pure headless core — Temporal dates, helpers, controller, interactions, layout, view-models, i18n, shared domain & slot contracts; zero UI/framework/DOM/CSS code), `./react` (React 19 portal/store adapter), `./vue` (Vue 3.5+), `./svelte` (Svelte 5+), `./solid` (Solid 2.0+), `./angular` (Angular 22+), `./styles.css` (combined layered CSS `@layer ilamy.base, ilamy.theme`), `./styles/base.css` (structural layout only), `./styles/theme.css` (visual theme tokens), `./testing` (React test harness), and `./plugins/{recurrence,agenda,drag-to-create,year,ical}`. Runtime `dependencies` contains ONLY `preact` and `temporal-polyfill` (`preact` stays internal and never appears in public `.d.ts` or headless root `.`). Optional `peerDependencies` are `react`, `react-dom`, `vue`, `svelte`, `solid-js`, `@angular/core`, `rrule` (only for `@ilamy/calendar/plugins/recurrence`), and `tailwindcss` (optional). `@radix-ui/*`, `@dnd-kit/*`, `@mui/material`, `@stylexjs/stylex`, `lucide-react`, `class-variance-authority`, `clsx`, and `tailwind-merge` are removed completely. Plugin subpaths self-reference `@ilamy/calendar` at runtime (`tsconfig.build.json` keeps it external in both JS and `.d.ts` so there is one canonical `CalendarEvent` interface for declaration merging). Tailwind is genuinely optional: `@ilamy/calendar/styles.css` works standalone with zero Tailwind and auto-bridges shadcn CSS variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`) — working with Base UI (#401), Radix, React Aria, shadcn-vue, shadcn-svelte, and plain CSS. The demo (`apps/demo/src/styles/globals.css`) imports `@ilamy/calendar/styles.css` before `@import 'tailwindcss'`.
 
-Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via each package's own tsconfig `paths`: Bun reads the tsconfig nearest the importing file) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the plugin packages + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
+Paths in the **Key Paths** section below are shown from `packages/calendar/` unless noted otherwise. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside `packages/calendar`. **`bun run ci` builds before type-check/test** (`apps/demo` and `packages/playground` resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
 
 ### Data Flow
 
 ```
-IlamyCalendar
-  -> CalendarProvider (all state: events, view, date, translations, CRUD)
-    -> CalendarDndContext (@dnd-kit wrapper)
-      -> View components (month/week/day/year)
+IlamyCalendar (React / Vue / Svelte / Solid / Angular)
+  -> lib/renderer (internal Preact 11 renderer) + lib/interactions (pointer DnD/resize)
+    -> lib/controller (state, Temporal dates, translations, CRUD, framework-agnostic plugins)
 ```
 
-All CRUD flows through context: `addEvent`, `updateEvent`, `deleteEvent`.
+All CRUD flows through `lib/controller` and the framework wrapper (`addEvent`, `updateEvent`, `deleteEvent`).
 Recurring events: `updateRecurringEvent`, `deleteRecurringEvent`.
-Hook access: `useIlamyCalendarContext()`.
+In React, `IlamyCalendar` connects via `useSyncExternalStore` + React Context (`useIlamyCalendarContext()`, `ref`) and mounts custom UI regions (`slots`, `renderEvent`, `headerComponent`, `renderResource`, `renderEventForm`, `renderHour`, `renderCurrentTimeIndicator`, `onMoreEventsClick`) into `lib/renderer` targets via `ReactDOM.createPortal`.
 
 ### Recurring Events (RFC 5545)
 
@@ -309,7 +317,7 @@ Uses `rrule.js` with strict RFC 5545 compliance. Three event types:
 | Generated instance | no | no | `originalId_number` |
 | Modified instance | no | yes | any |
 
-Core logic in `packages/plugins/recurrence/src/utils/` (one file per operation):
+Core logic in `packages/calendar/src/features/plugins/recurrence/utils/` (one file per operation):
 - `generateRecurringEvents()` (`generate-recurring-events.ts`) — create instances from rrule
 - `updateRecurringEvent()` (`update-recurring-event.ts`) — scoped updates (this/following/all) with EXDATE
 - `deleteRecurringEvent()` (`delete-recurring-event.ts`) — scoped deletions
@@ -324,61 +332,52 @@ Every event must have a globally unique `uid`. EXDATE uses ISO strings in `exdat
 ## Key Paths
 
 ```
-packages/calendar/src/                         # (= @/… via tsconfig paths). Bulletproof React layout: imports flow
-                                               #   shared -> features -> app; biome.json rejects a shared file importing @/features/*
-  index.ts                                    # Public API exports (app layer)
-  testing/                                    # CalendarTestProvider (@ilamy/calendar/testing, app layer) + test fixtures
-  plugins/                                    # Plugin subpath entries (@ilamy/calendar/plugins/*, app layer)
-  features/calendar/                          # THE calendar feature: everything calendar-specific
-    components/
-      ilamy-calendar.tsx                       # Main component (carries the resource axis props)
-      ilamy-resource-calendar.tsx              # DEPRECATED alias of IlamyCalendar
-      views/                                   # built-in PluginView specs + ViewRenderer dispatcher + resource arrangements, year-view
-      header/                                  # Calendar header, title, view controls
-      event-form/                              # Event creation/editing forms
-      vertical-grid/                           # Time-based grid (day/week views)
-        events-layer/                          #   The layer, its event bar, and its drag mirror
-      horizontal-grid/                         # Date-based grid (month view)
-        events-layer/                          #   Same three, for the row axis
-      grid-cell/                               # The cell and its parts
-      all-day-row/                             # All-day event bar
-      drag-and-drop/                           # @dnd-kit integration + the drag mirror card
-      draggable-event/                         # Draggable event bar + default content
-      calendar-slots.tsx                       # SLOT_* mount points + host slot components (context shapes in @ilamy/types)
-      calendar.tsx (the popover day picker), droppable-cell.tsx, resource-cell.tsx, current-time-marker.tsx, hour-label.tsx, date-picker.tsx, time-picker.tsx
-    hooks/                                     # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,interaction}),
-                                               #   use-smart-calendar-context, use-processed-{day,week}-events, use-effective-business-hours,
-                                               #   drag hooks (use-calendar-drag, use-drop-commit, use-drag-preview-event), use-scoped-event-mutation, …
-      calendar-data/                           #   the data slice: use-calendar-data composes use-event-store, use-event-mutations,
-                                               #   use-plugin-mutations, use-resource-lookups; event-changes (pure reporting helpers)
-    stores/                                    # Calendar STATE (Bulletproof `stores/`)
-      calendar-context/                        #   CalendarContext + CalendarProvider (the ONE state provider)
-      calendar-cell-context/                   #   CalendarCellContext + CalendarCellProvider (the narrow subset grid cells read)
-      drag-preview-context.tsx                 #   The in-flight drag candidate (the snapped mirror reads it)
-      grid-axis-context.tsx                    #   Which grid drew a bar; decides its truncation affordances
-    utils/                                     # business-hours, view-hours, event-form-utils, event-pipeline (resource membership),
-                                               #   keys, normalize, export-ical, drag-preview, grab-offset, event-surface, pointer-within-lazily
-      layout/                                  #   geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
-    types/
-  components/                                 # Shared, feature-independent UI: animations/, ui/ (picker-nav)
-  hooks/                                      # Shared hooks: use-latest-handler, use-autocomplete-timepicker
-  lib/plugins/                                # Plugin kernel; PluginRuntime (contract types live in @ilamy/types)
-  config/                                     # constants.ts, translations/ (default translations, types)
-  utils/                                      # date-utils (generic date math)
-  types/                                      # Shared types (CalendarView, TimeFormat)
+packages/calendar/
+  styles/
+    base.css                                   # Structural layout CSS (@layer ilamy.base)
+    theme.css                                  # Visual theme tokens & default styles (@layer ilamy.theme)
+  src/
+    index.ts                                   # Headless core entry `.` (exports types/, utils/, lib/{controller,layout,view-models}/, config/)
+    config/                                    # Shared configuration
+    types/                                     # Canonical CalendarEvent, Resource, BusinessHours, plugin contracts
+    utils/
+      temporal.ts                              # TC39 Temporal helpers (ZonedDate, parseDate, toOffsetIso, …)
+      helpers.ts                               # Shared pure helpers (listKey, readableTextColor, snap math, …)
+      i18n/                                    # Default translations & createTranslator
+    lib/
+      controller/                              # Headless calendar controller
+      layout/                                  # Grid & event layout algorithms
+      interactions/                            # Zero-dependency pointer DnD/resize engine
+      plugins/                                 # Framework-agnostic plugin runtime
+      view-models/                             # View-model builders
+      renderer/                                # Internal Preact 11 renderer (wrapped by all 5 frameworks; never exported publicly):
+        index.ts                               #   Internal renderer entry (`mountCalendar`)
+        app/                                   #   DOM state/controller bridge (`CalendarApp`, `mountCalendar`)
+        components/                            #   Preact UI components (buttons, pickers, dialogs, region slot hosts)
+        types/                                 #   Internal renderer types
+        utils/                                 #   Renderer utilities (`preact-slot`, constraints, formatting, scroll-to-time)
+        features/                              #   Isolated renderer features: header, dialogs, views
+    features/                                  # Independent vertical features (ZERO relative cross-feature imports):
+      adapters/
+        react/                                 #   Thin React 19 wrapper over lib/renderer + lib/controller (./react; strict unidirectional layers via Biome noRestrictedImports):
+          index.ts                             #     React public API exports
+          ilamy-calendar.tsx                   #     <IlamyCalendar /> wrapper, ReactDOM.createPortal slot bridge
+          calendar-context.ts                  #     useIlamyCalendarContext hook
+          types.ts                             #     React adapter types (IlamyCalendarProps, EventFormProps, ReactCalendarSlots)
+          testing/                             #     CalendarTestProvider (@ilamy/calendar/testing) + test fixtures
+        vue/                                   #   Thin Vue 3.5+ wrapper over lib/renderer + lib/controller (./vue)
+        svelte/                                #   Thin Svelte 5 wrapper over lib/renderer + lib/controller (./svelte)
+        solid/                                 #   Thin Solid 2.0 wrapper over lib/renderer + lib/controller (./solid)
+        angular/                               #   Thin Angular 22 wrapper over lib/renderer + lib/controller (./angular)
+      plugins/                                 #   Framework-agnostic DOM plugins (./plugins/*; import ONLY top-level types/, utils/, lib/; zero React):
+        recurrence/                            #     RFC 5545 recurrence (types/, utils/, augment.ts, DOM hooks/UI)
+        agenda/                                #     Agenda view plugin
+        year/                                  #     12-month year overview plugin
+        ical/                                  #     RFC 5545 .ics export plugin
+        drag-to-create/                        #     Drag-to-create plugin
 
-# Recurrence plugin (separate package; agenda + drag-to-create siblings follow the same shape):
-packages/plugins/recurrence/src/
-  utils/                                       # generate-recurring-events, update-/delete-recurring-event, series-helpers (isRecurringEvent)
-  components/recurrence-editor/                # Recurrence rule builder UI (@ilamy/ui Radix)
-  components/recurrence-edit-dialog/           # Edit/delete scope dialog
-  components/date-input.tsx                    # Native date input for the series end
-  stores/recurrence-editor-context.ts          # The editor's state
-  augment.ts                                   # declare module '@ilamy/calendar' { CalendarEvent.rrule … }
-
-# Shadcn primitives live in @ilamy/ui (packages/ui/src/components/*), imported via @ilamy/ui/components/<name>.
-# Shared React hooks live there too (packages/ui/src/hooks/*), imported via @ilamy/ui/hooks/<name>
-# (useRequiredContext: read a context or throw outside its provider).
+# Demo-only shadcn chrome (textbook Bulletproof React: app/, components/{form,ui}, features/, hooks/, lib/, types/, utils/; never by @ilamy/calendar):
+packages/playground/src/components/ui/
 
 docs/
   rfc-5545.md                                  # iCalendar spec reference
@@ -401,23 +400,22 @@ docs/
   logs/                                        # Daily dev logs (see Development Logs)
 ```
 
-### Public API (`src/index.ts`)
+### Public API
 
-**Components**: `IlamyCalendar` (+ `IlamyResourceCalendar` deprecated alias)
-**Hooks**: `useIlamyCalendarContext()` (returns `IlamyCalendarApi`)
-**Plugin SDK**: `SLOT_EVENT_FORM`, `SLOT_EVENT_MUTATION_SCOPE`, configured `dayjs`, contract types (`IlamyPlugin`, `PluginView`, `ViewConfig`, …)
-**Types**: `CalendarEvent`, `CalendarView`, `TimeFormat`, `BusinessHours`, `WeekDays`, `Resource`, `Translations`, `TranslatorFunction`, `CellInfo`, `IlamyCalendarProps`
+**Headless Core (`@ilamy/calendar` / `packages/calendar/src/index.ts`)**: `createCalendarController`, Temporal helpers (`ZonedDate`, `parseDate`, `toOffsetIso`, …), pointer interaction primitives, layout & view-model builders, i18n (`defaultTranslations`, `createTranslator`), canonical domain types (`CalendarEvent`, `CalendarView`, `IsoDateString`, `TimeFormat`, `BusinessHours`, `WeekDays`, `Resource`, `Translations`, `TranslatorFunction`, `CellInfo`), slot contracts (`SlotName`, `CalendarSlots`, `CalendarSlotProps`), and framework-agnostic plugin contracts (`CalendarPlugin`, `CalendarPluginView`, `ViewConfig`, `SLOT_*`). Zero UI/framework/DOM/CSS code.
+**Internal Preact Renderer (`packages/calendar/src/lib/renderer/`)**: Internal `mountCalendar` engine, pointer DnD/resize integration, and region slot hosts — wrapped by the five public framework adapters (`./react`, `./vue`, `./svelte`, `./solid`, `./angular`) and never exported publicly.
+**React UI (`@ilamy/calendar/react` / `packages/calendar/src/features/adapters/react/`)**: `IlamyCalendar`, `useIlamyCalendarContext()` (`IlamyCalendarApi`), `IlamyCalendarProps`, `ReactCalendarSlots`, `CalendarSlotProps`, `EventFormProps`, `SLOT_EVENT_FORM`, `SLOT_EVENT_MUTATION_SCOPE`, `SLOT_TOOLBAR`, `IlamyPlugin`, `PluginView` (custom UI via region `slots` or `ReactDOM.createPortal` props: `renderEvent`, `headerComponent`, `renderResource`, `renderEventForm`, `renderHour`, `renderCurrentTimeIndicator`, `onMoreEventsClick`).
 
-Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringEvents()`, `isRecurringEvent()`, `RRule`, `RRuleOptions`, `recurrencePlugin` come from `@ilamy/calendar/plugins/recurrence`.
+Optional feature exports live on subpaths, NOT the headless root `@ilamy/calendar`: React UI on `@ilamy/calendar/react`, framework adapters on `@ilamy/calendar/{vue,svelte,solid,angular}`, CSS stylesheets on `@ilamy/calendar/styles.css` / `@ilamy/calendar/styles/base.css` / `@ilamy/calendar/styles/theme.css`, test harness on `@ilamy/calendar/testing`, and framework-agnostic plugins on `@ilamy/calendar/plugins/{recurrence,agenda,drag-to-create,year,ical}`. Runtime `dependencies` contains only `preact` (internal only, never leaked into `.d.ts` or headless core `.`) and `temporal-polyfill`; framework (`react`, `react-dom`, `vue`, `svelte`, `solid-js`, `@angular/core`), styling (`tailwindcss`), and recurrence (`rrule`) integrations are optional `peerDependencies`, with zero `@dnd-kit/*`, `@radix-ui/*`, `@mui/material`, `@stylexjs/stylex`, `class-variance-authority`, `clsx`, `tailwind-merge`, or `lucide-react` dependencies.
 
 ## Code Rules
 
 ### Dates
 
-- Storage/transmission: `dayjs().toISOString()` — always ISO strings
-- Display only: `YYYY-MM-DD` format is acceptable in UI
-- Tests: use `'2025-10-13T00:00:00.000Z'` or `dayjs().toISOString()`, never `'2025-10-13'`
-- Timezones: with a `timezone` prop the machine's zone decides nothing; without one everything falls back to it. A string carrying `Z`/`±HH:MM` keeps its instant, a string carrying no offset is anchored in the configured zone, and the zone must be applied DURING render (an effect is too late). Read `docs/timezones.md` before touching anything that parses a date or calls `dayjs.tz.setDefault` (see the Hard Rules: the machine's zone still leaks through dayjs until the Temporal migration).
+- Storage/transmission: ISO 8601 strings with explicit offset (`toOffsetIso(date)`) — never `YYYY-MM-DD`
+- Display only: `Intl.DateTimeFormat` with explicit `timeZone`
+- Tests: use `'2025-10-13T00:00:00+00:00'` or `'2025-10-13T00:00:00Z'`, never `'2025-10-13'`
+- Timezones: with a `timezone` prop the machine's zone decides nothing; without one everything falls back to it. A string carrying `Z`/`±HH:MM` keeps its instant, a string carrying no offset is anchored in `event.timezone ?? calendar.timezone`. Zero module-global timezone state. Read `docs/timezones.md` before changing date parsing or DST logic.
 
 ### Code Quality
 
@@ -430,7 +428,7 @@ Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringE
   the first time; it is not a cleanup pass for later.
 - One operation per line, no long chains
 - Meaningful names: `targetEventStartISO` not `targetEvent.start.toISOString()`
-- Follow the Shadcn design system. Use predefined sizes (sm, default, lg). Don't override design tokens (h-8, h-9, custom spacing) unless absolutely necessary.
+- In `@ilamy/calendar`, use zero-UI-library native HTML primitives and `--ilamy-*` CSS tokens from `packages/calendar/styles/{base,theme}.css` (never introduce Tailwind, Radix, CVA, or icon libraries into the published package; shadcn primitives belong only to demo-only chrome in `packages/playground/src/components/ui/`).
 
 ### TDD
 

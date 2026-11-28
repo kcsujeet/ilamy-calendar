@@ -75,11 +75,12 @@ const open = async (
 ) => {
 	await gotoScenario(page, {
 		scenario: 'seed',
-		plugins: ['recurrence'],
+		plugins: ['recurrence', 'ical'],
 		...options,
 		settings: {
 			seed: JSON.stringify(seed),
 			dayMaxEvents: 10,
+			editable: 'true',
 			scrollTime: '00:00',
 			slot: 30,
 			...options.settings,
@@ -102,7 +103,7 @@ const rows = (page: Page) => new CalendarPage(page).eventState()
 const changes = (page: Page) => new CalendarPage(page).eventChanges()
 
 const bar = (page: Page, title: string) =>
-	page.locator('[data-testid^="vertical-event-"]').filter({ hasText: title })
+	page.locator('[data-testid^="calendar-event-"]').filter({ hasText: title })
 
 const openForm = async (page: Page, title: string, index: number) => {
 	await settle(page)
@@ -156,7 +157,7 @@ test.describe('edit this and following (week view, UTC)', () => {
 	}) => {
 		await open(page, [standup()], { view: 'month' })
 		const monthBars = page
-			.locator('[data-testid^="horizontal-event-"]')
+			.locator('[data-testid^="calendar-event-"]')
 			.filter({ hasText: 'Stand-up' })
 		await expect(monthBars).toHaveCount(7)
 		await monthBars.nth(3).click()

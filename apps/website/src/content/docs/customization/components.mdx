@@ -1,155 +1,240 @@
 ---
-title: Components
-description: Customize calendar components to match your application's design.
+title: Components & Region Slots
+description: Replace calendar regions (header, event, resource, eventForm, moreEventsDialog, recurrenceScopeDialog) with native markup, shadcn/Base UI, Material UI, bits-ui, or Vue scoped slots.
 slug: docs/customization/components
 ---
 
-Learn how to customize individual calendar components.
+Out of the box, `@ilamy/calendar` renders accessible native HTML (`<dialog>`, `<button>`, `<input>`, `<select>`) across **React, Vue, Svelte, Solid, and Angular**. When you want your own design-system dialogs, toolbars, or event cards, use **region-level `slots`** (and **`slotProps`** for CSS classes/tokens — following the MUI v6+ convention).
 
-## Header Customization
+## Supported Region `slots`
 
-Customize the calendar header appearance and behavior using className props or replace it entirely with a custom component.
+| Slot name | Replaces | Works in |
+|---|---|---|
+| `header` | Full top navigation toolbar & view switcher | React, Vue (`#header`), Svelte, Solid, Angular |
+| `event` | Event bar interior content | React, Vue (`#event`), Svelte, Solid, Angular |
+| `resource` | Resource header / lane label | React, Vue (`#resource`), Svelte, Solid, Angular |
+| `eventForm` | Create / edit / delete event modal | React, Vue (`#event-form`), Svelte, Solid, Angular |
+| `moreEventsDialog` | "+N more" overflow dialog | React, Vue (`#more-events-dialog`), Svelte, Solid, Angular |
+| `recurrenceScopeDialog` | "Edit recurring event" scope prompt | React, Vue (`#recurrence-scope-dialog`), Svelte, Solid, Angular |
 
-### Header Class Name
+Each slot host stays mounted across navigation, drags, and event updates — inputs keep focus and third-party dialog/select portals keep their state and Escape dismissal order.
 
-Use the `headerClassName` prop to apply custom styles to the calendar header:
+---
 
-```tsx
-<IlamyCalendar
-  headerClassName="bg-blue-50 border-blue-200 text-blue-900"
-  // ... other props
-/>
-```
+## shadcn / Base UI or Radix `Dialog` (React)
 
-### Custom Header Component
+Keep your page styling (`@ilamy/calendar/styles.css` or `unstyled`) and swap in your own `Dialog`, `Select`, and `Popover` inside `slots.eventForm`. React Context (your theme store and `useIlamyCalendarContext()`) flows directly into every slot portal:
 
-For complete control, you can replace the default header with your own element. It renders inside the calendar, so it can read and drive the calendar through [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context):
+```tsx title="BaseUiEventFormCalendar.tsx"
+import { Dialog } from '@base-ui/react/dialog'
+import type { EventFormSlotContext } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
+import '@ilamy/calendar/styles.css'
+import { useEffect, useState } from 'react'
 
-```tsx
-import { useIlamyCalendarContext } from '@ilamy/calendar';
+function BaseUiEventForm({
+  open,
+  event,
+  initialStart,
+  initialEnd,
+  initialAllDay,
+  onAdd,
+  onUpdate,
+  onClose,
+}: EventFormSlotContext) {
+  const [title, setTitle] = useState('')
 
-const CustomHeader = () => {
-  const { currentDate, prevPeriod, nextPeriod } = useIlamyCalendarContext();
+  useEffect(() => {
+    if (open) setTitle(event?.title ?? '')
+  }, [open, event])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const payload = {
+      id: event?.id ?? crypto.randomUUID(),
+      title: title.trim() || 'Untitled Event',
+      start: event?.start ?? initialStart,
+      end: event?.end ?? initialEnd,
+      allDay: event?.allDay ?? initialAllDay,
+    }
+    if (event) onUpdate(event.id, payload)
+    else onAdd(payload)
+    onClose()
+  }
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-purple-600">
-      <button onClick={prevPeriod}>← Previous</button>
-      <h2 className="text-white font-bold">{currentDate.format('MMMM YYYY')}</h2>
-      <button onClick={nextPeriod}>Next →</button>
-    </div>
-  );
-};
+    <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/40" />
+        <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg">
+          <Dialog.Title className="text-base font-semibold">
+            {event ? 'Edit Event' : 'Create Event'}
+          </Dialog.Title>
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <input
+              aria-label="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full rounded-md border px-3 py-2 text-sm"
+            />
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={onClose}>Cancel</button>
+              <button type="submit">{event ? 'Update' : 'Create'}</button>
+            </div>
+          </form>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  )
+}
 
-<IlamyCalendar
-  headerComponent={<CustomHeader />}
-  // ... other props
+export function App({ events, onEventAdd, onEventUpdate }) {
+  return (
+    <IlamyCalendar
+      events={events}
+      editable
+      onEventAdd={onEventAdd}
+      onEventUpdate={onEventUpdate}
+      slots={{ eventForm: BaseUiEventForm }}
+    />
+  )
+}
+```
+
+The same pattern applies to `@radix-ui/react-dialog` (`@/components/ui/dialog`).
+
+---
+
+## Material UI `Dialog` (React)
+
+Pair MUI components in `slots.eventForm` with any CSS option (for example Plain CSS with `muiThemeToSlotProps(theme)` from [Styling & Themes](/docs/customization/styling#material-ui-theme-recipe)):
+
+```tsx title="MuiEventForm.tsx"
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import TextField from '@mui/material/TextField'
+import type { EventFormSlotContext } from '@ilamy/calendar'
+import { useEffect, useState } from 'react'
+
+export function MuiEventForm({
+  open,
+  event,
+  initialStart,
+  initialEnd,
+  initialAllDay,
+  onAdd,
+  onUpdate,
+  onClose,
+}: EventFormSlotContext) {
+  const [title, setTitle] = useState('')
+
+  useEffect(() => {
+    if (open) setTitle(event?.title ?? '')
+  }, [open, event])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const payload = {
+      id: event?.id ?? `mui-${Date.now()}`,
+      title: title.trim() || 'Untitled Event',
+      start: event?.start ?? initialStart,
+      end: event?.end ?? initialEnd,
+      allDay: event?.allDay ?? initialAllDay,
+    }
+    if (event) onUpdate(event.id, payload)
+    else onAdd(payload)
+    onClose()
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle>{event ? 'Edit Event' : 'Create Event'}</DialogTitle>
+      <form onSubmit={handleSubmit}>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Title"
+            size="small"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="contained">
+            {event ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
+  )
+}
+```
+
+---
+
+## bits-ui / shadcn-svelte `Dialog` (Svelte 5)
+
+Pass Svelte 5 components directly into `slots` (plus `getAllContexts()` when the slot reads parent Svelte contexts):
+
+```svelte title="SvelteCalendar.svelte"
+<script lang="ts">
+  import '@ilamy/calendar/styles.css'
+  import { ilamyCalendar } from '@ilamy/calendar/svelte'
+  import { getAllContexts } from 'svelte'
+  import BitsEventForm from './BitsEventForm.svelte'
+
+  const context = getAllContexts()
+  let events = $state(initialEvents)
+</script>
+
+<div
+  class="h-[600px]"
+  {@attach ilamyCalendar({
+    events,
+    editable: true,
+    context,
+    slots: { eventForm: BitsEventForm },
+    onEventAdd: (added) => (events = [...events, added]),
+    onEventUpdate: (updated) =>
+      (events = events.map((e) => (e.id === updated.id ? updated : e))),
+  })}
 />
 ```
 
-To drive the calendar from a toolbar you render yourself, outside the calendar, pass a `ref` instead; see [Controlling the calendar from outside](/docs/components/calendar#controlling-the-calendar-from-outside).
+---
 
-## View Headers Customization
+## Vue 3.5 Scoped Slots
 
-Customize the day headers (Mon, Tue, Wed, etc.) that appear at the top of the calendar grid.
+Vue users can supply scoped region templates directly inside `<IlamyCalendar>` (works with native HTML, reka-ui, or shadcn-vue):
 
-To change the text of the day headers rather than their style, use `dayHeaderFormat`; see [Formatting times and dates](/docs/components/calendar#formatting-times-and-dates).
+```vue title="VueCalendar.vue"
+<script setup lang="ts">
+import '@ilamy/calendar/styles.css'
+import { IlamyCalendar } from '@ilamy/calendar/vue'
+import { ref } from 'vue'
 
-```tsx
-<IlamyCalendar
-  viewHeaderClassName="bg-gray-100 text-gray-700 font-semibold py-3"
-  // ... other props
-/>
+const events = ref(initialEvents)
+</script>
+
+<template>
+  <IlamyCalendar :events="events" editable>
+    <template #event="{ event }">
+      <span>{{ event.title }}</span>
+    </template>
+    <template #event-form="{ open, event, initialStart, initialEnd, onAdd, onClose }">
+      <MyVueDialog :open="open" @close="onClose" @save="(data) => { ... }" />
+    </template>
+  </IlamyCalendar>
+</template>
 ```
 
-:::note[Sticky View Header Positioning]
-When using a sticky view header (`stickyViewHeader={true}`), the `viewHeaderClassName` is where you add positioning classes to prevent overlap with your top navigation.
+---
 
-```tsx
-// If you have a 64px top navigation bar
-<IlamyCalendar
-  stickyViewHeader={true}
-  viewHeaderClassName="top-16 bg-background z-40"
-  // ... other props
-/>
+## React v3 Convenience Props
 
-// For multiple navigation elements (e.g., 80px total height)
-<IlamyCalendar
-  stickyViewHeader={true}
-  viewHeaderClassName="top-20 bg-background shadow-sm z-40"
-  // ... other props
-/>
-```
-
-Remember to include `bg-background` and appropriate `z-index` values to ensure proper layering.
-:::
-
-You can also pass a custom component to completely replace the view headers for advanced styling and functionality.
-
-## Event Rendering
-
-Create custom event renderers to control how events appear within calendar cells using the `renderEvent` prop.
-
-### Custom Event Renderer
-
-```tsx
-const renderEvent = (event) => (
-  <div className={`
-    rounded-md p-2 text-sm font-medium
-    ${event.priority === 'high' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
-      event.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' :
-      'bg-blue-100 text-blue-800 border-l-4 border-blue-500'}
-  `}>
-    <div className="flex items-center gap-2">
-      {event.priority === 'high' && <span>🔥</span>}
-      <span className="truncate">{event.title}</span>
-    </div>
-    {event.description && (
-      <p className="text-xs opacity-75 mt-1 truncate">{event.description}</p>
-    )}
-  </div>
-);
-
-<IlamyCalendar
-  renderEvent={renderEvent}
-  events={events}
-  // ... other props
-/>
-```
-
-### Event Props
-
-`renderEvent` receives the event and a `segment`. The event includes:
-- `title` - Event title
-- `start` - Start date/time
-- `end` - End date/time (exclusive)
-- `color` - Event color/theme
-- `allDay` - Whether it's an all-day event
-- `data` - Any custom properties you include in your event data
-
-`segment` is `{ isStart, isEnd }`. An event too long for its row is drawn as one bar per row, and these say whether this bar holds the event's real start or end, so you can square the cut edges. See [Drawing a cut event](/docs/components/calendar#drawing-a-cut-event). Your own markup does not keep its title in view while the bar is partly scrolled out; see [Keeping the title in view](/docs/components/calendar#keeping-the-title-in-view).
-
-## More Events Overflow
-
-When a day cell holds more events than `dayMaxEvents` (default `4`), the calendar renders a "+N more" indicator. Clicking it opens the built-in all-events dialog. Provide `onMoreEventsClick` to replace that dialog with your own UI:
-
-```tsx
-<IlamyCalendar
-  events={events}
-  dayMaxEvents={3}
-  onMoreEventsClick={(day, events) => {
-    // day: the cell's day (Dayjs); events: all events for that day
-    openDayDrawer(day, events);
-  }}
-/>
-```
-
-When the callback is provided, the built-in dialog never opens. Omit it to keep the default behavior.
-
-## Styling Tips
-
-:::tip[Pro Tips]
-- Use CSS variables for consistent theming across all custom components
-- Consider accessibility when customizing colors and contrast ratios
-- Test your custom components with different screen sizes and zoom levels
-- Use the `cn()` utility function for conditional styling
-:::
+In `@ilamy/calendar/react`, `renderEvent`, `headerComponent`, `renderResource`, `renderEventForm`, and `onMoreEventsClick` continue to work as thin convenience props mapped onto `slots` alongside `useIlamyCalendarContext()` (for example reading `currentDate`, `prevPeriod`, `nextPeriod`, or `view` inside a custom header or event). For new cross-framework code or custom `moreEventsDialog` / `recurrenceScopeDialog` overrides, prefer `slots`.

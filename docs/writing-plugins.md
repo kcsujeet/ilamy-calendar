@@ -2,6 +2,8 @@
 
 Plugins let you extend the calendar with new event pipelines, custom UI, new views, and your own React state — all without touching the core library. This guide is written for a third-party developer who has `@ilamy/calendar` installed.
 
+> **v4 architecture note (Option A):** In v4 (planned in `docs/superpowers/plans/2026-11-22-v4-zero-ui-deps-and-collapsed-monorepo-plan.md`), `IlamyPlugin` becomes **framework-agnostic** (DOM slot callbacks + core data hooks) so a single plugin works identically across React, Vue, Svelte, Solid, Angular, and Vanilla DOM. The rest of this guide documents the current v3 React plugin contract until that milestone lands in code.
+
 ---
 
 ## What is a plugin?
@@ -9,8 +11,8 @@ Plugins let you extend the calendar with new event pipelines, custom UI, new vie
 A plugin is an object that satisfies the `IlamyPlugin` interface. You create it with a factory function (so callers can pass options) and pass it to the calendar's `plugins` prop.
 
 ```tsx
-import type { IlamyPlugin } from '@ilamy/calendar'
-import { IlamyCalendar } from '@ilamy/calendar'
+import type { IlamyPlugin } from '@ilamy/calendar/react'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 
 const myPlugin = (): IlamyPlugin => ({
   name: 'my-plugin',
@@ -44,10 +46,11 @@ Called once per render cycle. The output of each plugin is fed to the next one (
 - **Filter** — remove events based on custom business rules.
 - **Decorate** — add computed fields (e.g. apply a `color` based on event category).
 
-`PluginDateRange` has `start` and `end` as `Dayjs` values covering the current viewport.
+`PluginDateRange` has `start` and `end` as `IsoDateString` values covering the current viewport.
 
 ```tsx
-import type { IlamyPlugin, CalendarEvent, PluginDateRange } from '@ilamy/calendar'
+import type { CalendarEvent, PluginDateRange } from '@ilamy/calendar'
+import type { IlamyPlugin } from '@ilamy/calendar/react'
 
 const categoryColorPlugin = (): IlamyPlugin => ({
   name: 'category-color',
@@ -84,13 +87,12 @@ interface PluginMutationArgs {
 `scope` is your plugin's own opaque data. The host gathers it by rendering the `SLOT_EVENT_MUTATION_SCOPE` slot before calling `applyEdit`/`applyDelete`. Your plugin produces it, the core hands it back.
 
 ```tsx
+import type { CalendarEvent, PluginMutationArgs } from '@ilamy/calendar'
 import type {
   IlamyPlugin,
-  CalendarEvent,
-  PluginMutationArgs,
   EventMutationScopeSlotContext,
-} from '@ilamy/calendar'
-import { SLOT_EVENT_MUTATION_SCOPE } from '@ilamy/calendar'
+} from '@ilamy/calendar/react'
+import { SLOT_EVENT_MUTATION_SCOPE } from '@ilamy/calendar/react'
 
 type ApprovalScope = { confirmed: boolean }
 
@@ -171,8 +173,8 @@ interface EventMutationScopeSlotContext {
 Example — adding a custom field to the event form:
 
 ```tsx
-import type { IlamyPlugin, EventFormSlotContext } from '@ilamy/calendar'
-import { SLOT_EVENT_FORM } from '@ilamy/calendar'
+import type { IlamyPlugin, EventFormSlotContext } from '@ilamy/calendar/react'
+import { SLOT_EVENT_FORM } from '@ilamy/calendar/react'
 
 const meetingTypePlugin = (): IlamyPlugin => ({
   name: 'meeting-type',
@@ -257,8 +259,8 @@ interface PluginView {
 Register one or more new calendar views. They appear in the view switcher after the built-in views. The component receives no props; it reads all state via `useIlamyCalendarContext()`.
 
 ```tsx
-import type { IlamyPlugin } from '@ilamy/calendar'
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import type { IlamyPlugin } from '@ilamy/calendar/react'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 
 function AgendaView() {
   const { events, currentDate } = useIlamyCalendarContext()
@@ -296,7 +298,7 @@ Wraps the calendar subtree so your plugin's React context is available to its vi
 
 ```tsx
 import { createContext, useContext, useState } from 'react'
-import type { IlamyPlugin } from '@ilamy/calendar'
+import type { IlamyPlugin } from '@ilamy/calendar/react'
 
 interface AgendaState { compact: boolean; setCompact: (v: boolean) => void }
 const AgendaContext = createContext<AgendaState | null>(null)
@@ -346,20 +348,20 @@ Once this file is imported (it is re-exported from the recurrence plugin's entry
 
 ## Reading calendar state in plugin components
 
-Use `useIlamyCalendarContext()` from `@ilamy/calendar` inside any component rendered by the calendar (views, slot content, etc.). It returns `IlamyCalendarApi`:
+Use `useIlamyCalendarContext()` from `@ilamy/calendar/react` inside any component rendered by the calendar (views, slot content, etc.). It returns `IlamyCalendarApi`:
 
 ```ts
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 
 function MyPluginView() {
   const {
     // State
-    currentDate,       // Dayjs — the currently displayed date
+    currentDate,       // IsoDateString — the currently displayed date
     view,              // string — current view name
     events,            // CalendarEvent[] — plugin-transformed events for the viewport
     rawEvents,         // CalendarEvent[] — stored events before transformation
     selectedEvent,     // CalendarEvent | null
-    selectedDate,      // Dayjs | null
+    selectedDate,      // IsoDateString | null
     isEventFormOpen,   // boolean
     firstDayOfWeek,    // number (0 = Sunday, 1 = Monday, …)
     resources,         // Resource[]
@@ -369,26 +371,26 @@ function MyPluginView() {
     businessHours,     // BusinessHours | BusinessHours[] | undefined
 
     // Navigation
-    setCurrentDate,    // (date: Dayjs) => void, silent: no onDateChange (use selectDate)
-    selectDate,        // (date: Dayjs) => void
-    setView,           // (view: string, date?: Dayjs) => void
+    setCurrentDate,    // (date: PublicDateInput) => void, silent: no onDateChange (use selectDate)
+    selectDate,        // (date: PublicDateInput) => void
+    setView,           // (view: string, date?: PublicDateInput) => void
     nextPeriod,        // () => void
     prevPeriod,        // () => void
     today,             // () => void
 
     // CRUD
-    addEvent,          // (event: CalendarEvent) => void
+    addEvent,          // (event: CalendarEventInput) => void
     updateEvent,       // (id: string | number, updates: Partial<CalendarEvent>) => void
     deleteEvent,       // (id: string | number) => void
     applyScopedEdit,   // (event, updates, scope) => void
     applyScopedDelete, // (event, scope) => void
 
     // Form control
-    openEventForm,     // (eventData?: Partial<CalendarEvent>) => void
+    openEventForm,     // (eventData?: OpenEventFormInput) => void
     closeEventForm,    // () => void
 
     // Querying
-    getEventsForDateRange, // (start: Dayjs, end: Dayjs) => CalendarEvent[]
+    getEventsForDateRange, // (start: PublicDateInput, end: PublicDateInput) => CalendarEvent[]
     getEventsForResource,  // (resourceId: string | number) => CalendarEvent[]
 
     // Plugin system (read-only access from inside a plugin)
@@ -419,7 +421,7 @@ attributes are a stable contract: a plugin may read them, and a change to one is
 
 | Attribute | Present | Meaning |
 |---|---|---|
-| `data-start` | always | The first instant the cell covers, as a UTC ISO string (`toISOString()`). Parse it with `dayjs.utc(value)` and render it in the calendar's `timezone`; reading it as a plain string drifts by the zone offset. |
+| `data-start` | always | The first instant the cell covers, as a UTC ISO string (`toISOString()`). Parse it with `parseDate(value, timezone)` (from `@ilamy/calendar`) and render it in the calendar's `timezone`; reading it as a plain string drifts by the zone offset. |
 | `data-end` | always | The cell's EXCLUSIVE end (RFC 5545 `DTEND`), as a UTC ISO string. A day cell ends at the next midnight, an hour-grid cell at the end of its slot. |
 | `data-resource-id` | on a resource calendar's cells | The id of the resource the cell belongs to, as a string. Resource ids are `string \| number`, so a numeric id arrives as its text (`0` as `"0"`): find the `Resource` whose `String(id)` matches and use its own `id`, never the attribute text, when you write a `resourceId` back. |
 | `data-all-day` | `"true"` on all-day cells, absent otherwise | The cell is in the all-day row. Selections never mix all-day and timed cells. |
@@ -431,7 +433,7 @@ Not part of the contract, only styling and test hooks: `data-view`, `data-slot-d
 `data-testid`.
 
 The snap math the drag-to-create plugin and the core share (`getFractionAlong`, `getSnapBucket`,
-`resolveSnapDuration`, `getCellMinutes`) lives in `@ilamy/utils/helpers`, not in the core's internals.
+`resolveSnapDuration`, `getCellMinutes`) lives in `packages/calendar/src/utils/helpers.ts` (exported from `@ilamy/calendar`), not in React view internals.
 
 ---
 
@@ -449,7 +451,7 @@ Create a separate npm package. Declare `@ilamy/calendar` as a `peerDependency` (
 }
 ```
 
-Import the entire SDK from `@ilamy/calendar`. Deep imports into the package (e.g. `@ilamy/calendar/src/...`) are blocked by the `exports` map; only `@ilamy/calendar` and `@ilamy/calendar/plugins/recurrence` are valid entry points.
+Import React plugin APIs from `@ilamy/calendar/react` and core domain types/utilities from `@ilamy/calendar`. Deep imports into the package (e.g. `@ilamy/calendar/src/...`) are blocked by the `exports` map; use the public entry points (`@ilamy/calendar`, `@ilamy/calendar/react`, `@ilamy/calendar/plugins/*`, etc.).
 
 Consumers install and wire it the same way as first-party plugins:
 
@@ -482,7 +484,8 @@ declare module '@ilamy/calendar' {
 ```tsx
 // holiday-plugin/index.ts
 import './augment'
-import type { IlamyPlugin, CalendarEvent, PluginDateRange } from '@ilamy/calendar'
+import type { CalendarEvent, PluginDateRange } from '@ilamy/calendar'
+import type { IlamyPlugin } from '@ilamy/calendar/react'
 
 const HOLIDAY_COLOR = '#e11d48'
 
@@ -499,15 +502,15 @@ export const holidayPlugin = (): IlamyPlugin => ({
 
 ```tsx
 // app.tsx
-import { IlamyCalendar, dayjs } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { holidayPlugin } from './holiday-plugin'
 
 const events = [
   {
     id: '1',
     title: 'New Year',
-    start: dayjs('2026-01-01T00:00:00Z'),
-    end: dayjs('2026-01-01T23:59:59Z'),
+    start: '2026-01-01T00:00:00Z',
+    end: '2026-01-02T00:00:00Z',
     allDay: true,
     isHoliday: true,
   },
@@ -522,30 +525,35 @@ export default function App() {
 
 ## Summary of public imports
 
-Everything a plugin needs comes from `@ilamy/calendar`:
+React UI and plugin contract imports come from `@ilamy/calendar/react`:
 
 ```ts
 import {
   // Components
   IlamyCalendar,
-  IlamyResourceCalendar,
 
   // Plugin contract types
   type IlamyPlugin,
   type PluginView,
-  type PluginMutationArgs,
-  type PluginDateRange,
 
   // Slot catalog
   SLOT_EVENT_FORM,
   SLOT_EVENT_MUTATION_SCOPE,
+  SLOT_TOOLBAR,
   type EventFormSlotContext,
   type EventMutationScopeSlotContext,
+  type ToolbarSlotContext,
 
   // Context hook
   useIlamyCalendarContext,
   type IlamyCalendarApi,
+} from '@ilamy/calendar/react'
+```
 
+Framework-agnostic domain types, Temporal date utilities, i18n, and controller/layout primitives come from `@ilamy/calendar`:
+
+```ts
+import {
   // Core types
   type CalendarEvent,
   type CalendarView,
@@ -553,11 +561,17 @@ import {
   type Resource,
   type Translations,
   type TranslatorFunction,
+  type PluginMutationArgs,
+  type PluginDateRange,
+  type IsoDateString,
+  type NavigationStep,
 
-  // Date utilities
-  dayjs,
-  type Dayjs,
-  type ManipulateType,
+  // Temporal date utilities
+  parseDate,
+  formatDate,
+  add,
+  startOf,
+  endOf,
 } from '@ilamy/calendar'
 ```
 

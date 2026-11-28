@@ -1,5 +1,9 @@
 import { expect, type Page, test } from '@playwright/test'
-import { gotoScenario } from './support/harness'
+import {
+	gotoScenario,
+	settleAnimations,
+	waitForDragRender,
+} from './support/harness'
 import { MonthGrid } from './support/pages'
 
 /*
@@ -25,9 +29,7 @@ const refDate = (page: Page) => page.getByTestId('external-date')
 const refView = (page: Page) => page.getByTestId('external-view')
 
 const gridViewport = (page: Page) =>
-	page.locator(
-		'[data-testid="vertical-grid-scroll"] [data-radix-scroll-area-viewport]'
-	)
+	page.locator('[data-ilamy-slot="grid-scroll"]')
 
 test.describe('controlling the calendar through its ref', () => {
 	test('next, prev and today navigate, and the ref reads the new date', async ({
@@ -60,23 +62,26 @@ test.describe('controlling the calendar through its ref', () => {
 
 	test('changeView switches the rendered view', async ({ page }) => {
 		await open(page, 'month')
-		await expect(page.getByTestId('vertical-grid-container')).toHaveCount(0)
+		await expect(page.getByTestId('dom-week-view')).toHaveCount(0)
 
 		await press(page, 'week')
 
 		await expect(refView(page)).toHaveText('week')
-		await expect(page.getByTestId('vertical-grid-container')).toBeVisible()
+		await expect(page.getByTestId('dom-week-view')).toBeVisible()
 	})
 
 	test('scrollToTime scrolls the hour grid to 13:30', async ({ page }) => {
 		await open(page, 'day')
 		const viewport = gridViewport(page)
 		await expect(viewport).toBeVisible()
-		await page.waitForTimeout(600)
+		await settleAnimations(page)
+		await waitForDragRender(page)
 
 		await press(page, 'scroll')
 
-		const label = page.getByTestId('vertical-time-13')
+		const label = page.locator(
+			'[data-ilamy-part="time-axis-hour"][data-hour="13"]'
+		)
 		const viewportTop = (await viewport.boundingBox())?.y ?? 0
 		const rowHeight = (await label.boundingBox())?.height ?? 0
 		// 13:30 is half a row into the 13:00 row, so that row starts half a row

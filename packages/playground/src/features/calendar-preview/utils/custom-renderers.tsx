@@ -1,0 +1,336 @@
+import type { CalendarEvent, IsoDateString, Resource } from '@ilamy/calendar'
+import {
+	type EventFormProps,
+	type RenderCurrentTimeIndicatorProps,
+	useIlamyCalendarContext,
+} from '@ilamy/calendar/react'
+import { Button } from '../../../components/ui/button'
+import { cn } from '../../../lib/utils'
+import { useEffect, useState } from 'react'
+
+const formatTime = (iso: IsoDateString, locale?: string, timezone?: string) =>
+	new Intl.DateTimeFormat(locale, {
+		timeZone: timezone,
+		hour: 'numeric',
+		minute: '2-digit',
+	}).format(new Date(iso))
+
+const parseIsoHour = (iso: IsoDateString): number => {
+	const match = /T(\d{2}):/.exec(iso)
+	return match ? Number(match[1]) : new Date(iso).getHours()
+}
+
+// Custom event renderer — adapts its typography to the configured eventHeight.
+// Returned as a factory so the demo can vary the renderer with the current
+// eventHeight without recreating an inline closure inside the page component.
+export function createRenderEvent(eventHeight: number) {
+	return function renderEvent(event: CalendarEvent) {
+		return <CustomEvent event={event} eventHeight={eventHeight} />
+	}
+}
+
+// A component (not part of renderEvent itself) so it can read the calendar's
+// `t` for the all-day label.
+function CustomEvent({
+	event,
+	eventHeight,
+}: {
+	event: CalendarEvent
+	eventHeight: number
+}) {
+	const { t, timezone } = useIlamyCalendarContext()
+	const isCompact = eventHeight <= 24
+	const isLarge = eventHeight >= 36
+	const titleSize = isLarge ? 'text-xs' : 'text-[10px]'
+	const timeSize = isLarge ? 'text-[10px]' : 'text-[8px]'
+	const timeRange = `${formatTime(event.start, undefined, timezone)} - ${formatTime(event.end, undefined, timezone)}`
+	const timeLabel = event.allDay ? t('allDay') : timeRange
+
+	// Deliberately unlike the built-in bar (black, dashed, uppercase) so a glance
+	// shows whether a view draws through the custom renderer.
+	return (
+		<div className="w-full h-full overflow-clip rounded-md border-2 border-dashed border-yellow-400 bg-black px-2 py-1 text-yellow-300">
+			<p
+				className={cn(
+					'font-mono font-bold uppercase tracking-wider truncate leading-tight',
+					titleSize
+				)}
+			>
+				★ {event.title}
+			</p>
+			{!isCompact && (
+				<p className={cn('truncate opacity-80 leading-tight', timeSize)}>
+					{timeLabel}
+				</p>
+			)}
+		</div>
+	)
+}
+
+// Custom resource renderer — counts the events on each resource. Returned as a
+// factory closing over the current resource events.
+export function createRenderResource(resourceEvents: CalendarEvent[]) {
+	return function renderResource(resource: Resource) {
+		const eventsForResource = resourceEvents.filter(
+			(event) =>
+				event.resourceId === resource.id ||
+				event.resourceIds?.includes(resource.id)
+		)
+		const recurringIds = new Set<string>()
+		const nonRecurringIds = new Set<string>()
+		for (const event of eventsForResource) {
+			const bucket = event.rrule ? recurringIds : nonRecurringIds
+			bucket.add(String(event.id))
+		}
+		const recurringCount = recurringIds.size
+		const totalCount = recurringCount + nonRecurringIds.size
+
+		return (
+			<div className="flex items-center justify-between p-2 h-full">
+				<div className="flex flex-col">
+					<span
+						className="font-semibold text-sm"
+						style={{ color: resource.color }}
+					>
+						{resource.title}
+					</span>
+					<span className="text-xs text-muted-foreground">
+						{totalCount} {totalCount === 1 ? 'event' : 'events'}
+						{recurringCount > 0 && (
+							<span className="ml-1">({recurringCount} recurring)</span>
+						)}
+					</span>
+				</div>
+				<div
+					className="w-2 h-2 rounded-full"
+					style={{ backgroundColor: resource.color }}
+				/>
+			</div>
+		)
+	}
+}
+
+// Custom current time indicator renderer.
+// Demonstrates branching on the `axis` prop so a single consumer-supplied
+// render function can position correctly across vertical day/week grids
+// (axis === 'vertical') and horizontal resource hour grids (axis === 'horizontal').
+export function renderCurrentTimeIndicator({
+	currentTime,
+	resource,
+	view,
+	axis,
+}: RenderCurrentTimeIndicatorProps) {
+	// In resource day view, ONLY show the badge for the first resource to avoid
+	// cluttering the indicator with multiple identical time badges per row/column.
+	const isPrimaryResource = !resource || resource.id === 'room-a'
+	const showBadge = view === 'day' ? isPrimaryResource : true
+	const badgeLabel = formatTime(currentTime)
+
+	if (axis === 'horizontal') {
+		return (
+			<div className="relative h-full w-0.5 pointer-events-none flex flex-col items-center">
+				{showBadge && (
+					<div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded-b-md font-medium shadow-sm whitespace-nowrap z-10">
+						{badgeLabel}
+					</div>
+				)}
+				{/* Red line extends across the full row height */}
+				<div className="flex-1 w-0.5 bg-red-500" />
+			</div>
+		)
+	}
+
+	return (
+		<div className="relative w-full h-0.5 pointer-events-none flex items-center">
+			{showBadge && (
+				<div className="absolute left-0 top-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded-r-md font-medium shadow-sm whitespace-nowrap z-10">
+					{badgeLabel}
+				</div>
+			)}
+			{/* Red line extends across all columns */}
+			<div className="flex-1 h-0.5 bg-red-500" />
+		</div>
+	)
+}
+
+// Custom hour renderer — stacks the hour number above its AM/PM marker.
+export function renderHour(date: IsoDateString) {
+	const hour24 = parseIsoHour(date)
+	const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12
+	const period = hour24 < 12 ? 'AM' : 'PM'
+	return (
+		<div className="flex flex-col items-center leading-tight">
+			<span className="font-bold text-sm">{hour12}</span>
+			<span className="text-[10px] opacity-60 uppercase font-medium">
+				{period}
+			</span>
+		</div>
+	)
+}
+
+// Custom calendar header — reads the live date/view from context to show a
+// bespoke header (demonstrates the headerComponent prop + useIlamyCalendarContext).
+export function CustomCalendarHeader() {
+	const {
+		currentDate,
+		timezone,
+		view,
+		setView,
+		nextPeriod,
+		prevPeriod,
+		today,
+		getViews,
+		hasResourceAxis,
+		openEventForm,
+		t,
+	} = useIlamyCalendarContext()
+	// The views the default header offers: resource calendars drop the ones
+	// that do not support resources (year, agenda).
+	const views = getViews().filter(
+		(v) => !hasResourceAxis || v.supportsResources
+	)
+	const formattedMonth = new Intl.DateTimeFormat(undefined, {
+		timeZone: timezone,
+		month: 'long',
+		year: 'numeric',
+	}).format(new Date(currentDate))
+	return (
+		<div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-3">
+			<div className="flex items-center gap-1.5">
+				<Button onClick={prevPeriod} size="sm" variant="outline">
+					‹
+				</Button>
+				<Button onClick={today} size="sm" variant="outline">
+					{t('today')}
+				</Button>
+				<Button onClick={nextPeriod} size="sm" variant="outline">
+					›
+				</Button>
+				<span className="ml-2 text-base font-semibold text-amber-500">
+					{formattedMonth}
+				</span>
+			</div>
+			<div className="flex flex-wrap items-center gap-1.5">
+				{views.map((item) => (
+					<Button
+						key={item.name}
+						onClick={() => setView(item.name)}
+						size="sm"
+						variant={view === item.name ? 'default' : 'outline'}
+					>
+						{t(item.label ?? item.name)}
+					</Button>
+				))}
+				<Button onClick={() => openEventForm()} size="sm" variant="outline">
+					{t('new')}
+				</Button>
+			</div>
+		</div>
+	)
+}
+
+// Custom event form — a bespoke modal passed via the renderEventForm prop.
+export function CustomEventForm({
+	open,
+	selectedEvent,
+	onAdd,
+	onUpdate,
+	onDelete,
+	onClose,
+}: EventFormProps) {
+	const [title, setTitle] = useState(selectedEvent?.title || '')
+
+	useEffect(() => {
+		setTitle(selectedEvent?.title || '')
+	}, [selectedEvent])
+
+	useEffect(() => {
+		if (!open) return
+		const onKeyDown = (evt: KeyboardEvent) => {
+			if (evt.key === 'Escape') {
+				evt.stopPropagation()
+				onClose()
+			}
+		}
+		window.addEventListener('keydown', onKeyDown, true)
+		return () => window.removeEventListener('keydown', onKeyDown, true)
+	}, [open, onClose])
+
+	if (!open) {
+		return null
+	}
+
+	const handleSubmit = (event: React.FormEvent) => {
+		event.preventDefault()
+		const nowIso = new Date().toISOString()
+		const base: CalendarEvent = {
+			id: selectedEvent?.id || `event-${Date.now()}`,
+			title: title || 'New Event',
+			start: selectedEvent?.start || nowIso,
+			end: selectedEvent?.end || nowIso,
+			...selectedEvent,
+		}
+		if (selectedEvent?.id && onUpdate) {
+			onUpdate({ ...base, title })
+		} else if (onAdd) {
+			onAdd({ ...base, title })
+		}
+		onClose()
+	}
+
+	return (
+		<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+			<div
+				aria-modal="true"
+				className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg"
+				role="dialog"
+			>
+				<h3 className="text-lg font-semibold mb-4 text-amber-500">
+					Custom Event Form
+				</h3>
+				<p className="text-xs text-muted-foreground mb-4">
+					This is a custom form rendered via the renderEventForm prop
+				</p>
+				<form className="space-y-4" onSubmit={handleSubmit}>
+					<div>
+						<label
+							className="block text-sm font-medium mb-1"
+							htmlFor="playground-event-form-title"
+						>
+							Event Title
+						</label>
+						<input
+							className="w-full px-3 py-2 border border-border rounded-md bg-background"
+							id="playground-event-form-title"
+							onChange={(event) => setTitle(event.target.value)}
+							placeholder="Enter event title"
+							type="text"
+							value={title}
+						/>
+					</div>
+					<div className="flex gap-2 justify-end">
+						{selectedEvent?.id && onDelete && (
+							<Button
+								onClick={() => {
+									onDelete(selectedEvent)
+									onClose()
+								}}
+								size="sm"
+								type="button"
+								variant="destructive"
+							>
+								Delete
+							</Button>
+						)}
+						<Button onClick={onClose} size="sm" type="button" variant="outline">
+							Cancel
+						</Button>
+						<Button size="sm" type="submit">
+							{selectedEvent?.id ? 'Update' : 'Create'}
+						</Button>
+					</div>
+				</form>
+			</div>
+		</div>
+	)
+}

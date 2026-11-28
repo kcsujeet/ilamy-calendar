@@ -1,4 +1,4 @@
-import { type CalendarEvent, dayjs, type Resource } from '@ilamy/calendar'
+import type { CalendarEvent, Resource } from '@ilamy/calendar'
 import { RRule } from '@ilamy/calendar/plugins/recurrence'
 import { type Plan, SUBJECT_ID } from './plan'
 
@@ -29,7 +29,7 @@ const windows: Record<Plan['view'], { from: string; days: number }> = {
 	year: { from: '2025-01-01T00:00:00.000Z', days: 365 },
 }
 
-const iso = (ms: number) => dayjs(new Date(ms).toISOString())
+const iso = (ms: number) => new Date(ms).toISOString()
 
 const makeEvent = (
 	id: string,

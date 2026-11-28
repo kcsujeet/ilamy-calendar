@@ -1,5 +1,7 @@
-import { type CalendarEvent, IlamyCalendar } from '@ilamy/calendar'
+import type { CalendarEvent } from '@ilamy/calendar'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+import { yearPlugin } from '@ilamy/calendar/plugins/year'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import {
 	Profiler,
 	type ProfilerOnRenderCallback,
@@ -37,10 +39,16 @@ export const App = () => {
 const ScenarioCalendar = ({ plan }: { plan: Plan }) => {
 	const resources = useMemo(() => buildResources(plan), [plan])
 	const [events, setEvents] = useState<CalendarEvent[]>(() => buildEvents(plan))
-	const plugins = useMemo(
-		() => (plan.plugins?.includes('recurrence') ? [recurrencePlugin()] : []),
-		[plan]
-	)
+	const plugins = useMemo(() => {
+		const list = []
+		if (plan.plugins?.includes('recurrence')) {
+			list.push(recurrencePlugin())
+		}
+		if (plan.view === 'year') {
+			list.push(yearPlugin())
+		}
+		return list
+	}, [plan])
 
 	// A consumer that owns its events persists a drop, as the e2e harness does.
 	const handleUpdate = (updated: CalendarEvent) => {
@@ -53,6 +61,7 @@ const ScenarioCalendar = ({ plan }: { plan: Plan }) => {
 		<div style={{ height: '100vh', width: '100vw' }}>
 			<Profiler id="calendar" onRender={recordCommit}>
 				<IlamyCalendar
+					editable
 					events={events}
 					initialDate={OPEN_DATE}
 					initialView={plan.view}

@@ -1,31 +1,18 @@
-import type { IlamyCalendarProps } from '@ilamy/calendar'
-import { dayjs, IlamyCalendar } from '@ilamy/calendar'
+import type { IlamyCalendarProps } from '@ilamy/calendar/react'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js'
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
-import timezone from 'dayjs/plugin/timezone.js'
-import utc from 'dayjs/plugin/utc.js'
 import { Card } from '@/components'
 import dummyEvents from '@/lib/seed'
 
-dayjs.extend(isSameOrAfter)
-dayjs.extend(isSameOrBefore)
-dayjs.extend(timezone)
-dayjs.extend(utc)
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000
 
 // Module-level so the plugins array keeps one identity across renders.
 const previewPlugins = [recurrencePlugin()]
 
 export function CalendarPreview() {
-	// Filter the dummy events to only include short events (1-2 days duration)
+	// Filter the dummy events to only include short events (up to 2 days)
 	const previewEvents: IlamyCalendarProps['events'] = dummyEvents.filter(
-		(event) => {
-			// Calculate the duration in days
-			const durationDays = event.end.diff(event.start, 'day')
-
-			// Keep events that are 0, 1 or 2 days in duration
-			return durationDays <= 2
-		}
+		(event) => Date.parse(event.end) - Date.parse(event.start) <= TWO_DAYS_MS
 	)
 
 	return (

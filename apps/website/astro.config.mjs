@@ -17,16 +17,6 @@ export default defineConfig({
 		ssr: {
 			noExternal: ['zod'],
 		},
-		// The playground imports every dayjs locale from inside a React island,
-		// where the first dependency scan does not look. Found later, they forced
-		// a second pre-bundle that rewrote dayjs.js to export the `t` each locale
-		// imports, while the dev server kept serving the first run's dayjs.js
-		// under the same URL: "does not provide an export named 't'". A trailing
-		// glob pre-bundles them all in the first run
-		// (https://vite.dev/config/dep-optimization-options#optimizedeps-include).
-		optimizeDeps: {
-			include: ['dayjs', 'dayjs/locale/*.js'],
-		},
 		plugins: [tailwindcss(), tsconfigPaths()],
 	},
 
@@ -66,6 +56,10 @@ export default defineConfig({
 							slug: 'docs/getting-started/installation',
 						},
 						{ label: 'Usage', slug: 'docs/getting-started/usage' },
+						{
+							label: 'Vue, Svelte, Solid & Angular',
+							slug: 'docs/frameworks/overview',
+						},
 					],
 				},
 				{
@@ -91,6 +85,8 @@ export default defineConfig({
 							label: 'Drag to Create',
 							slug: 'docs/plugins/drag-to-create',
 						},
+						{ label: 'Year View', slug: 'docs/plugins/year' },
+						{ label: 'iCal Export', slug: 'docs/plugins/ical' },
 					],
 				},
 				{
@@ -115,6 +111,10 @@ export default defineConfig({
 					items: [
 						{ label: 'FAQ', slug: 'docs/help/faq' },
 						{ label: 'Support', slug: 'docs/help/support' },
+						{
+							label: 'Migrating to v4',
+							slug: 'docs/help/migration-to-v4',
+						},
 						{
 							label: 'Migrating to v3',
 							slug: 'docs/help/migration-to-v3',

@@ -13,9 +13,11 @@ const lane = (resourceId: string, startISO: string) =>
 
 test.describe('horizontal row packing', () => {
 	const bar = (page: Page, id: string) =>
-		page.getByTestId(`horizontal-event-${id}`)
+		page.getByTestId(`calendar-event-${id}`)
 	const row = (page: Page, resourceId = 'r1') =>
-		page.getByTestId(`horizontal-row-${resourceId}`)
+		page.locator(
+			`[data-ilamy-part="res-h-row"][data-resource-id="${resourceId}"]`
+		)
 	const boundsOf = async (element: Locator) => {
 		const bounds = await element.boundingBox()
 		if (!bounds) throw new Error('Element has no geometry')
@@ -138,25 +140,21 @@ test.describe('horizontal row packing', () => {
 				settings: { seed, dayMaxEvents: 2, eventHeight: 48, height: '200px' },
 			})
 			await settleAnimations(page)
-			const cell = row(page).getByTestId('day-cell-2025-03-12-10-00')
+			const cell = row(page).getByTestId(
+				'dom-resource-hour-slot-r1-2025-03-12-10'
+			)
 			const placeholders = cell
 				.getByTestId('grid-cell-content')
-				.locator(':scope > div.w-full.shrink-0')
+				.locator(':scope > [data-ilamy-part="cell-placeholder"]')
 			await expect(placeholders).toHaveCount(2)
 			await expectFitsRow(page, 'minimum-short')
 			const more = cell.getByRole('button', { name: '+1 more', exact: true })
 			if (withHidden) {
 				await more.click()
 				const dialog = page.getByRole('dialog')
-				await expect(
-					dialog.getByText('minimum-next', { exact: true })
-				).toBeVisible()
-				await expect(
-					dialog.getByText('minimum-hidden', { exact: true })
-				).toBeVisible()
-				await expect(
-					dialog.getByText('minimum-short', { exact: true })
-				).toHaveCount(0)
+				await expect(dialog.getByText('minimum-next')).toBeVisible()
+				await expect(dialog.getByText('minimum-hidden')).toBeVisible()
+				await expect(dialog.getByText('minimum-short')).toHaveCount(0)
 			} else {
 				await expect(more).toHaveCount(0)
 			}
@@ -201,7 +199,7 @@ test.describe('horizontal row packing', () => {
 				scenario: 'horizontal-packing',
 				view: 'day',
 				orientation: 'horizontal',
-				settings: { seed, snapDuration: 15 },
+				settings: { seed, snapDuration: 15, editable: 'true' },
 			})
 			await settleAnimations(page)
 			const calendar = new CalendarPage(page)
@@ -330,12 +328,14 @@ test.describe('horizontal row packing', () => {
 				settings,
 			})
 			await settleAnimations(page)
-			const row = page.getByTestId('horizontal-row-r1')
+			const row = page.locator(
+				'[data-ilamy-part="res-h-row"][data-resource-id="r1"]'
+			)
 			const lostCellId = isHourAxis
-				? 'day-cell-2025-03-12-09-00'
+				? 'dom-resource-hour-slot-r1-2025-03-12-9'
 				: 'day-cell-2025-03-11'
 			const visibleCellId = isHourAxis
-				? 'day-cell-2025-03-12-10-00'
+				? 'dom-resource-hour-slot-r1-2025-03-12-10'
 				: 'day-cell-2025-03-12'
 			const lostCell = row.getByTestId(lostCellId)
 			const visibleCell = row.getByTestId(visibleCellId)
@@ -347,7 +347,7 @@ test.describe('horizontal row packing', () => {
 			).toHaveCount(0)
 			const placeholders = visibleCell
 				.getByTestId('grid-cell-content')
-				.locator(':scope > div.w-full.shrink-0')
+				.locator(':scope > [data-ilamy-part="cell-placeholder"]')
 			await expect(placeholders).toHaveCount(1)
 			const height = await placeholders
 				.first()
@@ -373,8 +373,8 @@ test.describe('horizontal row packing', () => {
 			await page.mouse.move(point.x, point.y, { steps: 8 })
 			await page.mouse.click(point.x, point.y)
 			const dialog = page.getByRole('dialog')
-			await expect(dialog.getByText('Counts A', { exact: true })).toBeVisible()
-			await expect(dialog.getByText('Counts B', { exact: true })).toBeVisible()
+			await expect(dialog.getByText('Counts A')).toBeVisible()
+			await expect(dialog.getByText('Counts B')).toBeVisible()
 		})
 	}
 
@@ -401,14 +401,16 @@ test.describe('horizontal row packing', () => {
 				settings,
 			})
 			await settleAnimations(page)
-			const row = page.getByTestId('horizontal-row-r1')
+			const row = page.locator(
+				'[data-ilamy-part="res-h-row"][data-resource-id="r1"]'
+			)
 			const cell = row.getByTestId('day-cell-2025-03-12')
 			const placeholders = cell
 				.getByTestId('grid-cell-content')
-				.locator(':scope > div.w-full.shrink-0')
+				.locator(':scope > [data-ilamy-part="cell-placeholder"]')
 			await expect(placeholders).toHaveCount(3)
 			await expect(cell.getByRole('button', { name: /more/i })).toHaveCount(0)
-			const bar = row.getByTestId('horizontal-event-counts-C')
+			const bar = row.getByTestId('calendar-event-counts-C')
 			const barBox = await bar.boundingBox()
 			const cellBox = await cell.boundingBox()
 			if (!(barBox && cellBox)) throw new Error('Event and cell need geometry')
@@ -460,8 +462,8 @@ test.describe('horizontal row packing', () => {
 			})
 			await settleAnimations(page)
 
-			const first = page.getByTestId('horizontal-event-packing-a')
-			const second = page.getByTestId('horizontal-event-packing-b')
+			const first = page.getByTestId('calendar-event-packing-a')
+			const second = page.getByTestId('calendar-event-packing-b')
 			const firstBox = await first.boundingBox()
 			const secondBox = await second.boundingBox()
 			if (!(firstBox && secondBox)) {
@@ -550,9 +552,11 @@ test.describe('horizontal row packing', () => {
 			const offset = await rowDifference(page, 'packing-a', 'packing-b')
 			expect(offset).toBe(0)
 			const content = row(page)
-				.getByTestId('day-cell-2025-03-12-09-00')
+				.getByTestId('dom-resource-hour-slot-r1-2025-03-12-9')
 				.getByTestId('grid-cell-content')
-			const placeholders = content.locator(':scope > div.w-full.shrink-0')
+			const placeholders = content.locator(
+				':scope > [data-ilamy-part="cell-placeholder"]'
+			)
 			await expect(placeholders).toHaveCount(1)
 			const placeholder = await boundsOf(placeholders.first())
 			expect(placeholder.height).toBe(48)
@@ -564,7 +568,7 @@ test.describe('horizontal row packing', () => {
 				})
 				await more.click()
 				await expect(
-					page.getByRole('dialog').getByText('packing-hidden', { exact: true })
+					page.getByRole('dialog').getByText('packing-hidden')
 				).toBeVisible()
 			} else {
 				await expect(
@@ -608,7 +612,7 @@ test.describe('horizontal row packing', () => {
 				scenario: 'horizontal-packing',
 				view: 'day',
 				orientation: 'horizontal',
-				settings: { slot: 60 },
+				settings: { slot: 60, editable: 'true' },
 			})
 			await settleAnimations(page)
 			const initialOffset = await rowDifference(page, 'packing-a', 'packing-b')
@@ -694,9 +698,7 @@ test.describe('horizontal row packing', () => {
 		const initialOffset = await rowDifference(page, 'packing-a', 'packing-b')
 		expect(initialOffset).toBe(0)
 		const calendar = new CalendarPage(page)
-		await calendar.root
-			.getByRole('radio', { name: 'Month', exact: true })
-			.click()
+		await calendar.root.getByTestId('view-btn-month').click()
 		await settleAnimations(page)
 		const dayOffset = await rowDifference(page, 'packing-a', 'packing-b')
 		expect(dayOffset).toBe(25)
@@ -769,7 +771,7 @@ const topmostBarAtLeftEdge = async (page: Page, testId: string) => {
 		({ x, y }) =>
 			document
 				.elementFromPoint(x, y)
-				?.closest('[data-testid^="vertical-event-"]')
+				?.closest('[data-testid^="calendar-event-"]')
 				?.getAttribute('data-testid'),
 		{ x: box.x + 4, y: box.y + box.height / 2 }
 	)
@@ -797,14 +799,14 @@ test.describe('vertical resource grids with whole-day rows', () => {
 				orientation: 'vertical',
 				settings,
 			})
-			await page.waitForTimeout(800)
+			await settleAnimations(page)
 			// "Single A" (Room 2, 09:00-10:00) and "Two days" (Room 2, 12 March
 			// 20:00 to 13 March 04:00) share Wednesday in the same room column.
-			expect(await topmostBarAtLeftEdge(page, 'vertical-event-q-single')).toBe(
-				'vertical-event-q-single'
+			expect(await topmostBarAtLeftEdge(page, 'calendar-event-q-single')).toBe(
+				'calendar-event-q-single'
 			)
-			expect(await topmostBarAtLeftEdge(page, 'vertical-event-q-span')).toBe(
-				'vertical-event-q-span'
+			expect(await topmostBarAtLeftEdge(page, 'calendar-event-q-span')).toBe(
+				'calendar-event-q-span'
 			)
 		})
 	}
@@ -824,7 +826,7 @@ test.describe('numeric resource ids', () => {
 				settings: { height: '900px' },
 			})
 			const calendar = new CalendarPage(page)
-			await page.waitForTimeout(800)
+			await settleAnimations(page)
 			const first = await page
 				.locator(lane('0', '2025-03-12T17:00:00.000Z'))
 				.first()
@@ -854,9 +856,7 @@ test.describe('numeric resource ids', () => {
 			const row = await calendar.eventNamed('Dragged')
 			// Resource ids are `string | number`; the lane's own id is the number 0.
 			expect(row.resourceId).toBe(0)
-			await expect(
-				page.getByTestId(`${orientation}-event-${row.id}`)
-			).toHaveCount(1)
+			await expect(page.getByTestId(`calendar-event-${row.id}`)).toHaveCount(1)
 		})
 	}
 })
@@ -872,8 +872,8 @@ test.describe('editing a cross-resource event', () => {
 			settings: { height: '700px' },
 		})
 		const calendar = new CalendarPage(page)
-		await page.waitForTimeout(800)
-		await page.getByTestId('horizontal-event-q-multi').nth(1).click()
+		await settleAnimations(page)
+		await page.getByTestId('calendar-event-q-multi').nth(1).click()
 		await page.getByLabel('Title').fill('Multi renamed')
 		await page.getByRole('button', { name: /update|save/i }).click()
 		await page.waitForTimeout(400)
@@ -892,12 +892,12 @@ test.describe('editing a cross-resource event', () => {
  * the drop still lands on the exact slot and the exact room under the pointer.
  */
 test.describe('dropping onto a slot of a vertical resource week', () => {
-	const settings = { slot: 15, scrollTime: '08:00' }
+	const settings = { slot: 15, scrollTime: '08:00', editable: 'true' }
 
 	/** The slot of a room whose range opens at this instant. */
 	const slotOf = (page: Page, resourceId: string, startISO: string) =>
 		page.locator(
-			`[data-testid^="vertical-cell-"][data-resource-id="${resourceId}"][data-start="${startISO}"]`
+			`[data-ilamy-part="time-slot"][data-resource-id="${resourceId}"][data-start="${startISO}"]`
 		)
 
 	const centerOf = async (target: ReturnType<typeof slotOf>) => {
@@ -949,7 +949,7 @@ test.describe('dropping onto a slot of a vertical resource week', () => {
 		const grid = new TimeGrid(page)
 		const target = slotOf(page, 'r2', '2025-03-12T11:15:00.000Z')
 
-		await dragBarTo(page, 'vertical-event-res-1', await centerOf(target))
+		await dragBarTo(page, 'calendar-event-res-1', await centerOf(target))
 		await releasePointer(page)
 
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
@@ -986,7 +986,7 @@ test.describe('dropping onto a slot of a vertical resource week', () => {
 			y: (above.y + above.height + below.y) / 2,
 		}
 
-		await dragBarTo(page, 'vertical-event-res-4', line)
+		await dragBarTo(page, 'calendar-event-res-4', line)
 		await releasePointer(page)
 
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
@@ -1003,7 +1003,7 @@ test.describe('dropping onto a slot of a vertical resource week', () => {
 		const grid = new TimeGrid(page)
 		const target = slotOf(page, 'r2', '2025-03-12T11:15:00.000Z')
 
-		await dragBarTo(page, 'vertical-event-res-1', await centerOf(target))
+		await dragBarTo(page, 'calendar-event-res-1', await centerOf(target))
 
 		await expect(target).toHaveAttribute('data-drop-target', 'true')
 		const tintedRooms = await grid.dropTargets.evaluateAll((cells) => [

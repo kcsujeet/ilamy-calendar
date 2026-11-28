@@ -1,3 +1,4 @@
+@import '@ilamy/calendar/styles.css';
 @import 'tailwindcss';
 
 /*
@@ -13,8 +14,6 @@
 /* vite aliases @ilamy/* to source, so Tailwind must scan source to generate
    the utilities those components reference. */
 @source "../../../packages/calendar/src";
-@source "../../../packages/ui/src";
-@source "../../../packages/plugins";
 
 @plugin "tailwindcss-animate";
 
@@ -32,7 +31,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.45 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);

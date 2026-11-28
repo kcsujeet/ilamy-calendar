@@ -69,7 +69,7 @@ test.describe('month grid', () => {
 
 		const dialog = page.getByRole('dialog')
 		await expect(dialog).toContainText('March 12, 2025')
-		await expect(dialog.getByText(/^Event \d$/)).toHaveCount(7)
+		await expect(dialog.getByText(/Event \d$/)).toHaveCount(7)
 	})
 
 	test('draws an event longer than a row as one bar per row', async ({
@@ -227,6 +227,7 @@ test.describe('header layout across widths', () => {
 				await gotoScenario(page, {
 					scenario: 'basic',
 					view,
+					plugins: view === 'year' ? ['year'] : undefined,
 					settings: { locale },
 				})
 
@@ -288,7 +289,7 @@ test.describe('recurring events', () => {
 			)
 		)
 		return page
-			.locator('[data-testid^="vertical-event-"]')
+			.locator('[data-testid^="calendar-event-"]')
 			.evaluateAll((bars) =>
 				bars.map((bar) => {
 					const box = bar.getBoundingClientRect()
@@ -352,7 +353,7 @@ test.describe('recurring events', () => {
 
 		// Monday and Tuesday come first; the third bar is Wednesday 12 March.
 		await page
-			.locator('[data-testid^="vertical-event-moved-series"]')
+			.locator('[data-testid^="calendar-event-moved-series"]')
 			.nth(2)
 			.click()
 		await page.getByRole('button', { name: 'Delete' }).click()
@@ -378,7 +379,7 @@ test.describe('recurring events', () => {
 
 		// The third bar is Wednesday 12 March.
 		await page
-			.locator('[data-testid^="vertical-event-moved-series"]')
+			.locator('[data-testid^="calendar-event-moved-series"]')
 			.nth(2)
 			.click()
 		await page.locator('input[name="title"]').fill('Team sync')
@@ -425,7 +426,7 @@ test.describe('recurring events', () => {
 		/** The distinct tops of the bars whose test id starts with `prefix`. */
 		const readTops = async (prefix: string) => {
 			const tops = await page
-				.locator(`[data-testid^="vertical-event-${prefix}"]`)
+				.locator(`[data-testid^="calendar-event-${prefix}"]`)
 				.evaluateAll((bars) =>
 					bars.map((bar) => Math.round(bar.getBoundingClientRect().top))
 				)
@@ -554,7 +555,7 @@ test.describe('a day the clocks change', () => {
 					timezone: 'America/New_York',
 					date: day.nineAM,
 				})
-				const bar = `[data-testid="${orientation}-event-${day.event}"]`
+				const bar = `[data-testid="calendar-event-${day.event}"]`
 				expect(await readHour(page, bar, orientation)).toBeCloseTo(9, 1)
 			})
 
@@ -568,6 +569,7 @@ test.describe('a day the clocks change', () => {
 					timezone: 'America/New_York',
 					date: day.nineAM,
 					now: day.nineAM,
+					settings: { nowIndicator: 'true' },
 				})
 				// The line is centred on its position, so read its middle.
 				const line = '[data-testid="current-time-indicator"]'
@@ -694,7 +696,7 @@ test.describe('navigation', () => {
 			settings: { slot: 15 },
 		})
 		const grid = new TimeGrid(page)
-		const firstCell = page.locator('[data-testid^="vertical-cell-"]').first()
+		const firstCell = page.locator('[data-ilamy-part="time-slot"]').first()
 		await firstCell.evaluate((cell) => {
 			cell.setAttribute('data-probe', 'before-navigation')
 		})
@@ -744,7 +746,7 @@ test.describe('navigation', () => {
 			})
 			const calendar = new CalendarPage(page)
 			const titleBefore = await calendar.title.textContent()
-			const cells = page.locator('.droppable-cell')
+			const cells = page.locator('[data-cell="true"]')
 			const firstStartBefore = await cells.first().getAttribute('data-start')
 			await cells.evaluateAll((all) => {
 				for (const cell of all) {
@@ -762,7 +764,7 @@ test.describe('navigation', () => {
 				firstStartBefore ?? ''
 			)
 			await expect(
-				page.locator('.droppable-cell:not([data-probe])')
+				page.locator('[data-cell="true"]:not([data-probe])')
 			).toHaveCount(0)
 		})
 	}
@@ -793,14 +795,15 @@ test.describe('the week that spans two months', () => {
 	 * planned — so when it changes, this test is the one that should fail and
 	 * say so, rather than the change going unnoticed.
 	 */
-	test('month padding is disabled, unlike a week that merely crosses months', async ({
+	test('month padding is shaded (not disabled) in v4.0, unlike a week that merely crosses months', async ({
 		page,
 	}) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'month' })
 
-		const disabled = page.locator('[data-disabled="true"]')
+		const shaded = page.locator('[data-outside-month="true"]')
 
-		await expect(disabled.first()).toBeAttached()
+		await expect(shaded.first()).toBeAttached()
+		await expect(page.locator('[data-disabled="true"]')).toHaveCount(0)
 	})
 })
 
@@ -867,7 +870,7 @@ test.describe('a resource with id 0', () => {
 
 			// One event per resource: drawn twice means resource 0 drew both.
 			const bars = (eventId: string) =>
-				page.locator(`[data-testid="${orientation}-event-${eventId}"]`)
+				page.locator(`[data-testid="calendar-event-${eventId}"]`)
 			await expect(bars('zero-1')).toHaveCount(1)
 			await expect(bars('one-1')).toHaveCount(1)
 		})
@@ -881,6 +884,7 @@ test.describe('a resource with id 0', () => {
 				scenario: 'numeric-resource-ids',
 				view: 'day',
 				orientation,
+				settings: { nowIndicator: 'true' },
 			})
 			await new CalendarPage(page).expectRendered()
 
@@ -900,15 +904,17 @@ test.describe('a resource with id 0', () => {
 
 		// The cell's own signal is the placeholder it renders per event it
 		// believes it holds, which carries the title as its test id.
-		const zeroRow = page.getByTestId('horizontal-row-0')
+		const zeroRow = page.locator(
+			'[data-ilamy-part="res-h-row"][data-resource-id="0"]'
+		)
 		await expect(zeroRow.getByTestId('Room Zero booking')).toHaveCount(1)
 		await expect(zeroRow.getByTestId('Room One booking')).toHaveCount(0)
 	})
 })
 
-/** The Radix scroll viewport inside the grid scroll area with `testId`. */
-const scrollViewportSelector = (testId: string): string =>
-	`[data-testid="${testId}"] [data-radix-scroll-area-viewport]`
+/** The scrollable grid viewport. */
+const scrollViewportSelector = (_testId: string): string =>
+	'[data-ilamy-slot="grid-scroll"]'
 
 /**
  * How far the row for `hour` sits from the scroll viewport's leading edge, in
@@ -1165,13 +1171,13 @@ test.describe('scrollToNow', () => {
 	// the cell holding it: an hour row, an hour column, or a whole day. The
 	// height keeps every target clear of the end of the grid, where the browser
 	// would clamp the scroll. `expectedOffset` is that cell's distance from the
-	// start of the time area at the pinned viewport: nine 61px hour rows or 81px
+	// start of the time area at the pinned viewport: nine 60px hour rows or 81px
 	// hour columns (eighty-one columns into the week), and eleven 81px day
-	// columns or 61px day rows into the month.
+	// columns or 60px day rows into the month.
 	const cases = [
 		{
 			name: 'week time grid',
-			expectedOffset: 549,
+			expectedOffset: 540,
 			scenario: 'basic',
 			view: 'week',
 			orientation: undefined,
@@ -1214,14 +1220,14 @@ test.describe('scrollToNow', () => {
 			settings: {},
 			scrollTestId: 'horizontal-grid-scroll',
 			target: '[data-start="2025-03-12T00:00:00.000Z"]',
-			origin: TIMED_CELL,
+			origin: '[data-start]',
 			axis: 'horizontal',
 		},
 		{
 			// The one grid whose all-day row sits inside the scroll area: its
 			// all-day cells hold now too, and must not be taken for the target.
 			name: 'vertical resource day',
-			expectedOffset: 549,
+			expectedOffset: 540,
 			scenario: 'resources',
 			view: 'day',
 			orientation: 'vertical',
@@ -1233,14 +1239,14 @@ test.describe('scrollToNow', () => {
 		},
 		{
 			name: 'vertical resource month',
-			expectedOffset: 671,
+			expectedOffset: 660,
 			scenario: 'resources',
 			view: 'month',
 			orientation: 'vertical',
 			settings: {},
 			scrollTestId: 'vertical-grid-scroll',
 			target: '[data-start="2025-03-12T00:00:00.000Z"]',
-			origin: TIMED_CELL,
+			origin: '[data-start]',
 			axis: 'vertical',
 		},
 	] as const
@@ -1399,7 +1405,7 @@ const titleGeometry = async (page: Page, c: TitleGeometryQuery) => {
 	)
 
 	const bar = page.getByTestId(c.barTestId)
-	const title = bar.getByText(c.title, { exact: true })
+	const title = bar.getByText(c.title)
 	const [barBox, titleBox, edgeBox] = await Promise.all([
 		bar.boundingBox(),
 		title.boundingBox(),
@@ -1425,7 +1431,7 @@ const titleGeometry = async (page: Page, c: TitleGeometryQuery) => {
 }
 
 const resourceLabel = (resourceId: string) => (page: Page) =>
-	page.getByTestId(`horizontal-row-label-${resourceId}`)
+	page.getByTestId(`resource-header-${resourceId}`)
 
 test.describe('sticky event titles (#290)', () => {
 	// FullCalendar's default event content puts `fc-sticky` on the title
@@ -1443,7 +1449,7 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: 'horizontal',
 			settings: {},
 			scrollTestId: 'horizontal-grid-scroll',
-			barTestId: 'horizontal-event-long-res-1',
+			barTestId: 'calendar-event-long-res-1',
 			title: 'Site survey',
 			axis: 'horizontal',
 			expectedTitleStart: 4,
@@ -1457,7 +1463,7 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: 'horizontal',
 			settings: {},
 			scrollTestId: 'horizontal-grid-scroll',
-			barTestId: 'horizontal-event-long-res-2',
+			barTestId: 'calendar-event-long-res-2',
 			title: 'Long shift',
 			axis: 'horizontal',
 			expectedTitleStart: 4,
@@ -1471,7 +1477,7 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: undefined,
 			settings: {},
 			scrollTestId: 'vertical-grid-scroll',
-			barTestId: 'vertical-event-long-1',
+			barTestId: 'calendar-event-long-1',
 			title: 'Long shift',
 			axis: 'vertical',
 			expectedTitleStart: 2,
@@ -1485,7 +1491,7 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: undefined,
 			settings: {},
 			scrollTestId: 'vertical-grid-scroll',
-			barTestId: 'vertical-event-long-1',
+			barTestId: 'calendar-event-long-1',
 			title: 'Long shift',
 			axis: 'vertical',
 			expectedTitleStart: 2,
@@ -1500,12 +1506,12 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: 'vertical',
 			settings: {},
 			scrollTestId: 'vertical-grid-scroll',
-			barTestId: 'vertical-event-long-res-2',
+			barTestId: 'calendar-event-long-res-2',
 			title: 'Long shift',
 			axis: 'vertical',
 			expectedTitleStart: 2,
 			scrollBy: 600,
-			inset: (page: Page) => page.getByTestId('vertical-grid-all-day'),
+			inset: (page: Page) => page.getByTestId('all-day-row'),
 		},
 		{
 			name: 'vertical resource day',
@@ -1514,12 +1520,12 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: 'vertical',
 			settings: {},
 			scrollTestId: 'vertical-grid-scroll',
-			barTestId: 'vertical-event-long-res-2',
+			barTestId: 'calendar-event-long-res-2',
 			title: 'Long shift',
 			axis: 'vertical',
 			expectedTitleStart: 2,
 			scrollBy: 600,
-			inset: (page: Page) => page.getByTestId('vertical-grid-all-day'),
+			inset: (page: Page) => page.getByTestId('all-day-row'),
 		},
 		{
 			// Without a sticky header nothing covers the top of the scroller, so
@@ -1530,7 +1536,7 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: 'vertical',
 			settings: { stickyViewHeader: 'false' },
 			scrollTestId: 'vertical-grid-scroll',
-			barTestId: 'vertical-event-long-res-2',
+			barTestId: 'calendar-event-long-res-2',
 			title: 'Long shift',
 			axis: 'vertical',
 			expectedTitleStart: 2,
@@ -1545,14 +1551,14 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: 'vertical',
 			settings: {},
 			scrollTestId: 'vertical-grid-scroll',
-			barTestId: 'horizontal-event-long-res-1',
+			barTestId: 'calendar-event-long-res-1',
 			title: 'Site survey',
 			axis: 'horizontal',
 			expectedTitleStart: 4,
 			scrollBy: 200,
 			inset: (page: Page) =>
 				page
-					.getByTestId('vertical-grid-all-day')
+					.getByTestId('all-day-row')
 					.getByText('All day', { exact: true })
 					.locator('..'),
 		},
@@ -1565,7 +1571,7 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: 'horizontal',
 			settings: { renderEventVariant: 'sticky-title' },
 			scrollTestId: 'horizontal-grid-scroll',
-			barTestId: 'horizontal-event-long-res-1',
+			barTestId: 'calendar-event-long-res-1',
 			title: 'Site survey',
 			axis: 'horizontal',
 			expectedTitleStart: 0,
@@ -1579,12 +1585,12 @@ test.describe('sticky event titles (#290)', () => {
 			orientation: 'vertical',
 			settings: { renderEventVariant: 'sticky-title' },
 			scrollTestId: 'vertical-grid-scroll',
-			barTestId: 'vertical-event-long-res-2',
+			barTestId: 'calendar-event-long-res-2',
 			title: 'Long shift',
 			axis: 'vertical',
 			expectedTitleStart: 0,
 			scrollBy: 600,
-			inset: (page: Page) => page.getByTestId('vertical-grid-all-day'),
+			inset: (page: Page) => page.getByTestId('all-day-row'),
 		},
 	] as const
 
@@ -1626,11 +1632,11 @@ test.describe('sticky event titles (#290)', () => {
 			.poll(async () => {
 				const { barStart, titleStart } = await titleGeometry(page, {
 					scrollTestId: 'vertical-grid-scroll',
-					barTestId: 'vertical-event-long-res-2',
+					barTestId: 'calendar-event-long-res-2',
 					title: 'Long shift',
 					axis: 'horizontal',
 					scrollBy: 93,
-					inset: (page: Page) => page.getByTestId('vertical-col-date-col'),
+					inset: (page: Page) => page.getByTestId('dom-time-axis'),
 				})
 				return { barRunsUnderEdge: barStart < 0, titleStart }
 			})
@@ -1642,7 +1648,7 @@ test.describe('sticky event titles (#290)', () => {
 			scenario: 'long-resource-events',
 			view: 'month',
 			orientation: 'horizontal',
-			settings: { height: '500px' },
+			settings: { height: '500px', editable: 'true' },
 		})
 		const viewport = page.locator(
 			scrollViewportSelector('horizontal-grid-scroll')
@@ -1651,7 +1657,7 @@ test.describe('sticky event titles (#290)', () => {
 			el.scrollLeft = 600
 		})
 		const [barBox, labelBox] = await Promise.all([
-			page.getByTestId('horizontal-event-long-res-1').boundingBox(),
+			page.getByTestId('calendar-event-long-res-1').boundingBox(),
 			resourceLabel('r1')(page).boundingBox(),
 		])
 		if (!barBox || !labelBox) {
@@ -1698,7 +1704,7 @@ test.describe('sticky event titles (#290)', () => {
 		await gotoScenario(page, {
 			scenario: 'long-events',
 			view: 'week',
-			settings: { height: '500px' },
+			settings: { height: '500px', editable: 'true' },
 		})
 		const viewport = page.locator(
 			scrollViewportSelector('vertical-grid-scroll')
@@ -1707,7 +1713,7 @@ test.describe('sticky event titles (#290)', () => {
 			el.scrollTop = 600
 		})
 		const [barBox, viewportBox] = await Promise.all([
-			page.getByTestId('vertical-event-long-1').boundingBox(),
+			page.getByTestId('calendar-event-long-1').boundingBox(),
 			viewport.boundingBox(),
 		])
 		if (!barBox || !viewportBox) {
@@ -1735,7 +1741,7 @@ test.describe('sticky event titles (#290)', () => {
 		// The segment in the start's column: a time grid draws one mirror per
 		// day column the drop would span.
 		const mirror = page
-			.getByTestId('vertical-events-day-col-2025-03-12')
+			.locator('[data-time-column="true"][data-date="2025-03-12"]')
 			.getByTestId('event-drag-preview-vertical')
 		await expect
 			.poll(async () => {
@@ -1765,7 +1771,7 @@ test.describe('sticky event titles (#290)', () => {
 			// The all-day row sticks with the header, so it is the lower edge.
 			name: 'under a header stuck to the window',
 			settings: {},
-			edge: (page: Page) => page.getByTestId('vertical-grid-all-day'),
+			edge: (page: Page) => page.getByTestId('all-day-row'),
 		},
 		{
 			name: 'above the window when the header scrolls away',
@@ -1783,8 +1789,8 @@ test.describe('sticky event titles (#290)', () => {
 				view: 'week',
 				settings: { ...c.settings, height: '1600px' },
 			})
-			const bar = page.getByTestId('vertical-event-long-1')
-			const title = bar.getByText('Long shift', { exact: true })
+			const bar = page.getByTestId('calendar-event-long-1')
+			const title = bar.getByText('Long shift')
 
 			await expect
 				.poll(async () => {
@@ -1814,7 +1820,7 @@ test.describe('sticky event titles (#290)', () => {
 			scenario: 'long-resource-events',
 			view: 'month',
 			orientation: 'horizontal',
-			settings: { height: '500px' },
+			settings: { height: '500px', editable: 'true' },
 		})
 
 		// Scrolled until only the last few pixels of the bar are left in view:
@@ -1823,7 +1829,7 @@ test.describe('sticky event titles (#290)', () => {
 			.poll(async () => {
 				const { titleEnd, barEnd } = await titleGeometry(page, {
 					scrollTestId: 'horizontal-grid-scroll',
-					barTestId: 'horizontal-event-long-res-1',
+					barTestId: 'calendar-event-long-res-1',
 					title: 'Site survey',
 					axis: 'horizontal',
 					// Leaves the last 30px of the bar beside the resource column.
@@ -1907,7 +1913,7 @@ test.describe('hourly resource timeline day labels', () => {
 		const viewport = page.locator(
 			scrollViewportSelector('horizontal-grid-scroll')
 		)
-		const dayHeaders = page.getByTestId('resource-week-day-header')
+		const dayHeaders = page.locator('[data-ilamy-part="res-h-day-group"]')
 		const wednesday = dayHeaders.getByText('Wed', { exact: true })
 		const thursday = dayHeaders.getByText('Thu', { exact: true })
 
@@ -1917,7 +1923,7 @@ test.describe('hourly resource timeline day labels', () => {
 				// stick: Wednesday's is pushed against the end of its day.
 				await viewport.evaluate((el) => {
 					const thursdayCell = [
-						...el.querySelectorAll('[data-testid="resource-week-day-header"]'),
+						...el.querySelectorAll('[data-ilamy-part="res-h-day-group"]'),
 					].find((cell) => cell.textContent?.includes('Thu'))
 					if (!thursdayCell) {
 						return
@@ -1950,14 +1956,14 @@ test.describe('an off-the-hour event on the hourly timeline', () => {
 			scenario: 'long-resource-events',
 			view: 'day',
 			orientation: 'horizontal',
-			settings: { scrollTime: '08:00', height: '600px' },
+			settings: { scrollTime: '08:00', height: '600px', editable: 'true' },
 		})
 
 	test('draws the bar from its exact start to its exact end', async ({
 		page,
 	}) => {
 		await openTimeline(page)
-		const bar = page.getByTestId('horizontal-event-long-res-3')
+		const bar = page.getByTestId('calendar-event-long-res-3')
 
 		// The bar's own geometry, as a percentage of its row: the drawn box is
 		// inset a few pixels so neighbouring bars do not touch. A day row is 24
@@ -1983,7 +1989,7 @@ test.describe('an off-the-hour event on the hourly timeline', () => {
 		page,
 	}) => {
 		await openTimeline(page)
-		const bar = page.getByTestId('horizontal-event-long-res-4')
+		const bar = page.getByTestId('calendar-event-long-res-4')
 		await expect(bar).toBeVisible()
 		const expectedWidth = await bar.evaluate((element) => {
 			const layer = element.parentElement
@@ -2005,11 +2011,11 @@ test.describe('an off-the-hour event on the hourly timeline', () => {
 	}) => {
 		await openTimeline(page)
 		const calendar = new CalendarPage(page)
-		const bar = page.getByTestId('horizontal-event-long-res-3')
+		const bar = page.getByTestId('calendar-event-long-res-3')
 		await expect(bar).toBeVisible()
 		const barBox = await bar.boundingBox()
 		const hourBox = await page
-			.getByTestId('resource-day-time-label-10')
+			.locator('[data-ilamy-part="res-h-hour-cell"][data-hour="10"]')
 			.boundingBox()
 		if (!barBox || !hourBox) {
 			throw new Error('the bar or the 10:00 header cell is not on screen')
@@ -2089,7 +2095,7 @@ test.describe('an all-day event on a vertical day grid (#322)', () => {
 					`[data-resource-id="r1"][data-start="${day}T00:00:00.000Z"]`
 				)
 			const [bar, firstCell, endCell] = await Promise.all([
-				page.getByTestId('vertical-event-long-res-1').boundingBox(),
+				page.getByTestId('calendar-event-long-res-1').boundingBox(),
 				roomACell(c.firstDay).boundingBox(),
 				roomACell('2025-03-13').boundingBox(),
 			])

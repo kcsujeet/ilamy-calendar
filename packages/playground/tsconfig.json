@@ -2,9 +2,7 @@
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
 		"paths": {
-			"@/*": ["./src/*"],
-			"@ilamy/ui/components/*": ["../ui/src/components/*"],
-			"@ilamy/ui/lib/utils": ["../ui/src/lib/utils.ts"]
+			"@/*": ["./src/*"]
 		}
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],

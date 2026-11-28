@@ -1,27 +1,32 @@
+import type {
+	CalendarEvent,
+	CalendarSlotProps,
+	CellInfo,
+	EventSegment,
+	EventsChange,
+	Resource,
+} from '@ilamy/calendar'
+import { agendaPlugin } from '@ilamy/calendar/plugins/agenda'
+import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create'
+import { icalPlugin } from '@ilamy/calendar/plugins/ical'
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+import { yearPlugin } from '@ilamy/calendar/plugins/year'
 import {
-	type CalendarEvent,
-	type CellInfo,
-	dayjs,
-	type EventSegment,
-	type EventsChange,
 	type EventsFetchInfo,
+	type HeaderSlotContext,
 	IlamyCalendar,
 	type IlamyCalendarApi,
 	type IlamyPlugin,
-	type Resource,
-	useIlamyCalendarContext,
-} from '@ilamy/calendar'
-// A dayjs locale is data the consumer registers (docs/migration-v2.md), so the
-// harness registers the ones its specs name with `locale=`.
-import 'dayjs/locale/ar.js'
-import 'dayjs/locale/de.js'
-import 'dayjs/locale/fr.js'
-import { agendaPlugin } from '@ilamy/calendar-agenda'
-import { dragToCreatePlugin } from '@ilamy/calendar-drag-to-create'
-import { recurrencePlugin } from '@ilamy/calendar-recurrence'
+} from '@ilamy/calendar/react'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { ConfigError, readUrlConfig } from './harness-config'
+import {
+	MATRIX_MUI_VARS_SLOT_PROPS,
+	MATRIX_STYLEX_SLOT_PROPS,
+	MATRIX_TAILWIND_SLOT_PROPS,
+	MatrixFrameworkHarness,
+} from './matrix-harness'
 import type {
 	PublishedChange,
 	PublishedFetch,
@@ -35,6 +40,8 @@ import {
 	type ViewName,
 } from './scenarios'
 import { readSeededEvents } from './seed'
+import { ReactBaseUiSpike } from './spike/react-base-ui-spike'
+import { SvelteSpikeHost } from './spike/svelte-bits-ui/svelte-spike-host'
 
 const VIEWS: readonly ViewName[] = ['day', 'week', 'month', 'year', 'agenda']
 
@@ -48,9 +55,13 @@ const PLUGINS = {
 	agenda: agendaPlugin,
 	recurrence: recurrencePlugin,
 	'drag-to-create': dragToCreatePlugin,
+	year: yearPlugin,
+	ical: icalPlugin,
 } as const
 
 type PluginName = keyof typeof PLUGINS
+
+const toUtcIso = (iso: string): string => new Date(iso).toISOString()
 
 interface LoggedSelection {
 	start: string
@@ -64,8 +75,8 @@ const recordSelection = (selection: CellInfo): void => {
 	logged.__selectLog = [
 		...(logged.__selectLog ?? []),
 		{
-			start: selection.start.toISOString(),
-			end: selection.end.toISOString(),
+			start: toUtcIso(selection.start),
+			end: toUtcIso(selection.end),
 			allDay: selection.allDay ?? null,
 			resourceId: selection.resource?.id ?? null,
 		},
@@ -108,8 +119,8 @@ const toPublishedRow = (event: CalendarEvent): PublishedRow => {
 		id: String(event.id),
 		uid: event.uid ?? null,
 		title: event.title,
-		start: event.start.toISOString(),
-		end: event.end.toISOString(),
+		start: toUtcIso(event.start),
+		end: toUtcIso(event.end),
 		resourceId: event.resourceId ?? null,
 		resourceIds: event.resourceIds ?? null,
 		allDay: Boolean(event.allDay),
@@ -135,6 +146,17 @@ const toPublishedRow = (event: CalendarEvent): PublishedRow => {
 export const App = () => {
 	const search = useLocationSearch()
 	const params = new URLSearchParams(search)
+
+	const spike = params.get('spike')
+	if (spike === 'react-base-ui') {
+		return <ReactBaseUiSpike />
+	}
+	if (spike === 'svelte-bits-ui') {
+		return <SvelteSpikeHost />
+	}
+	if (spike !== null) {
+		return <Problem>Unknown spike: {spike}</Problem>
+	}
 
 	const scenarioName = params.get('scenario') ?? 'basic'
 	const viewName = params.get('view') ?? 'month'
@@ -195,6 +217,9 @@ export const App = () => {
 	// The URL wins over the scenario's own settings, so a fixture can be pushed
 	// into a configuration it was not written for without editing it.
 	const {
+		framework,
+		css,
+		components,
 		height,
 		renderEventVariant,
 		resourceCount,
@@ -204,16 +229,99 @@ export const App = () => {
 		fetchDelay,
 		resourcesFetch,
 		agendaWindow: _agendaWindow,
+		multiZone,
+		themeVariant,
 		...calendarConfig
 	} = {
 		...scenario.config,
 		...urlConfig,
 	}
+	const activeFramework = framework ?? 'react'
+	const allowedComponents: Record<string, readonly string[]> = {
+		react: ['native', 'base-ui', 'mui'],
+		vue: ['native', 'reka-ui'],
+		svelte: ['native', 'bits-ui'],
+		solid: ['native'],
+		angular: ['native'],
+	}
+	if (components && !allowedComponents[activeFramework]?.includes(components)) {
+		return (
+			<Problem>
+				{`components: "${components}" is not supported for framework "${activeFramework}"`}
+			</Problem>
+		)
+	}
+	if (activeFramework === 'react' && components === 'base-ui') {
+		return <ReactBaseUiSpike />
+	}
+	if (activeFramework === 'svelte' && components === 'bits-ui') {
+		return <SvelteSpikeHost />
+	}
+
 	const resources = scenario.resources?.slice(0, resourceCount)
+
+	if (framework && framework !== 'react') {
+		return (
+			<MatrixFrameworkHarness
+				config={{ ...calendarConfig, themeVariant }}
+				css={css}
+				date={date}
+				framework={framework}
+				height={height}
+				logsSelections={logsSelections}
+				onRecordSelection={recordSelection}
+				orientation={orientation ?? undefined}
+				plugins={requested !== null ? plugins : undefined}
+				resources={resources}
+				scenario={scenario}
+				timezone={timezone}
+				toPublishedRow={toPublishedRow}
+				view={viewName}
+			/>
+		)
+	}
+
+	const { slots: _slotsMode, ...reactCalendarConfig } = calendarConfig
+	const resolvedConfig = {
+		...reactCalendarConfig,
+		...(css === 'unstyled' || css === 'tailwind' ? { unstyled: true } : {}),
+	}
+
+	if (multiZone) {
+		const multiZoneEvents = [...scenario.events]
+		return (
+			<div
+				data-testid="multi-zone-harness"
+				style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
+			>
+				<div data-testid="zone-ny" style={{ height: '700px' }}>
+					<IlamyCalendar
+						{...reactCalendarConfig}
+						events={multiZoneEvents}
+						initialDate={date}
+						initialView={viewName}
+						plugins={plugins}
+						timezone="America/New_York"
+					/>
+				</div>
+				<div data-testid="zone-tokyo" style={{ height: '700px' }}>
+					<IlamyCalendar
+						{...reactCalendarConfig}
+						events={multiZoneEvents}
+						initialDate={date}
+						initialView={viewName}
+						plugins={plugins}
+						timezone="Asia/Tokyo"
+					/>
+				</div>
+			</div>
+		)
+	}
 
 	return (
 		<Harness
-			config={calendarConfig}
+			config={resolvedConfig}
+			css={css}
 			date={date}
 			externalToolbar={externalToolbar}
 			fetchDelay={fetchDelay}
@@ -226,6 +334,7 @@ export const App = () => {
 			resourcesFetchMode={resourcesFetch}
 			revertChanges={revertChanges}
 			scenario={scenario}
+			themeVariant={themeVariant}
 			timezone={timezone}
 			view={viewName}
 		/>
@@ -245,6 +354,9 @@ const useLocationSearch = (): string => {
 }
 
 type HarnessOnly =
+	| 'framework'
+	| 'css'
+	| 'components'
 	| 'height'
 	| 'renderEventVariant'
 	| 'revertChanges'
@@ -252,6 +364,8 @@ type HarnessOnly =
 	| 'fetch'
 	| 'fetchDelay'
 	| 'agendaWindow'
+	| 'multiZone'
+	| 'themeVariant'
 
 type FetchMode = 'delayed' | 'failing' | 'held'
 
@@ -260,6 +374,7 @@ const HELD_POLL_MS = 25
 
 interface HarnessProps {
 	config: Omit<ReturnType<typeof readUrlConfig>, HarnessOnly>
+	css?: ReturnType<typeof readUrlConfig>['css']
 	date: string
 	externalToolbar?: boolean
 	fetchDelay?: number
@@ -272,9 +387,33 @@ interface HarnessProps {
 	resources?: Resource[]
 	revertChanges?: boolean
 	scenario: Scenario
+	themeVariant?: 'slot-props' | 'custom-button' | 'mui-vars'
 	timezone?: string
 	view: ViewName
 }
+
+const CUSTOM_SLOT_PROPS: CalendarSlotProps = {
+	root: { className: 'harness-custom-root', style: { borderWidth: '2px' } },
+	header: { className: 'harness-custom-header' },
+	cell: { className: 'harness-custom-cell' },
+}
+
+const CustomButtonHeaderSlot: React.FC<HeaderSlotContext> = ({
+	nextPeriod,
+	title,
+}) => (
+	<header>
+		<span data-testid="calendar-title">{title}</span>
+		<button
+			aria-label="Next"
+			data-custom-button="true"
+			onClick={nextPeriod}
+			type="button"
+		>
+			Next
+		</button>
+	</header>
+)
 
 /**
  * Holds the events so mutations stick, and publishes what the calendar reports
@@ -288,6 +427,7 @@ interface HarnessProps {
  */
 const Harness: React.FC<HarnessProps> = ({
 	config,
+	css,
 	date,
 	externalToolbar,
 	fetchDelay = 0,
@@ -300,6 +440,7 @@ const Harness: React.FC<HarnessProps> = ({
 	resources,
 	revertChanges,
 	scenario,
+	themeVariant,
 	timezone,
 	view,
 }) => {
@@ -381,7 +522,8 @@ const Harness: React.FC<HarnessProps> = ({
 			server.current.events.filter(
 				(row) =>
 					Boolean(row.rrule) ||
-					(row.start.isBefore(info.end) && row.end.isAfter(info.start))
+					(Date.parse(row.start) < Date.parse(info.end) &&
+						Date.parse(row.end) > Date.parse(info.start))
 			)
 	)
 	const [resourcesFetchLog, fetchResourcesFromServer] = useServer(
@@ -398,13 +540,30 @@ const Harness: React.FC<HarnessProps> = ({
 
 	return (
 		<div
+			data-css={css ?? 'plain'}
+			data-framework="react"
 			data-testid="harness"
 			style={{ height: height ?? '100vh', width: '100vw' }}
 		>
 			{externalToolbar && <ExternalToolbar calendarRef={calendarRef} />}
+			{resourcesFetchMode && (
+				<button
+					data-testid="refetch-resources"
+					onClick={() => calendarRef.current?.refetchResources()}
+					style={{ position: 'fixed', right: 0, bottom: 0, zIndex: 1000 }}
+					type="button"
+				>
+					refetch resources
+				</button>
+			)}
 			<IlamyCalendar
 				{...config}
 				events={fetchMode ? fetchFromServer : events}
+				slots={
+					themeVariant === 'custom-button'
+						? { header: CustomButtonHeaderSlot }
+						: undefined
+				}
 				initialDate={date}
 				initialView={view}
 				loading={(isLoading) =>
@@ -419,9 +578,7 @@ const Harness: React.FC<HarnessProps> = ({
 				onEventUpdate={shouldPersistRows ? handleUpdate : undefined}
 				onResourcesError={() => setResourceErrors((count) => count + 1)}
 				orientation={orientation}
-				plugins={
-					resourcesFetchMode ? [...plugins, refetchButtonPlugin] : plugins
-				}
+				plugins={plugins}
 				ref={calendarRef}
 				renderEvent={customRenderer}
 				resources={resourcesFetchMode ? fetchResourcesFromServer : resources}
@@ -431,6 +588,13 @@ const Harness: React.FC<HarnessProps> = ({
 						set.map((resource) => String(resource.id)),
 					])
 				}
+				slotProps={(() => {
+					if (themeVariant === 'slot-props') return CUSTOM_SLOT_PROPS
+					if (themeVariant === 'mui-vars') return MATRIX_MUI_VARS_SLOT_PROPS
+					if (css === 'stylex') return MATRIX_STYLEX_SLOT_PROPS
+					if (css === 'tailwind') return MATRIX_TAILWIND_SLOT_PROPS
+					return undefined
+				})()}
 				timezone={timezone}
 			/>
 			{/* Read by the specs, invisible to a screenshot. */}
@@ -474,7 +638,7 @@ const ExternalToolbar: React.FC<{
 		const timer = setInterval(() => {
 			const api = calendarRef.current
 			if (api) {
-				setReadout({ date: api.currentDate.toISOString(), view: api.view })
+				setReadout({ date: toUtcIso(api.currentDate), view: api.view })
 			}
 		}, 50)
 		return () => clearInterval(timer)
@@ -483,7 +647,7 @@ const ExternalToolbar: React.FC<{
 		next: (api) => api.nextPeriod(),
 		prev: (api) => api.prevPeriod(),
 		today: (api) => api.today(),
-		goto: (api) => api.setCurrentDate(dayjs('2025-07-04T12:00:00.000Z')),
+		goto: (api) => api.setCurrentDate('2025-07-04T12:00:00.000Z'),
 		week: (api) => api.setView('week'),
 		scroll: (api) => api.scrollToTime('13:30'),
 		refetch: (api) => api.refetchEvents(),
@@ -567,33 +731,6 @@ const useServer = <Row,>(
 		})
 	}
 	return [log, serve]
-}
-
-/** A button that calls `refetchResources()`; the context is only reachable inside the calendar. */
-const RefetchResourcesButton = ({
-	children,
-}: {
-	children: React.ReactNode
-}) => {
-	const { refetchResources } = useIlamyCalendarContext()
-	return (
-		<>
-			{children}
-			<button
-				data-testid="refetch-resources"
-				onClick={refetchResources}
-				style={{ position: 'fixed', right: 0, bottom: 0, zIndex: 1000 }}
-				type="button"
-			>
-				refetch resources
-			</button>
-		</>
-	)
-}
-
-const refetchButtonPlugin: IlamyPlugin = {
-	name: 'harness-refetch-resources',
-	provider: RefetchResourcesButton,
 }
 
 /**

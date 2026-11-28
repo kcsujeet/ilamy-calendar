@@ -1,9 +1,9 @@
+@import '@ilamy/calendar/styles.css';
 @import 'tailwindcss';
 
 /* The shared playground + the @ilamy/* source it pulls in live outside this
    app's tree, so Tailwind needs explicit sources to generate their classes. */
 @source "../../../../packages/playground/src";
-@source "../../../../packages/ui/src";
 @source "../../../../packages/calendar/src";
 
 @plugin "tailwindcss-animate";
@@ -14,6 +14,7 @@
    apps/v4/app/globals.css. The dark --border/--input are translucent white, so
    grid lines stay visible over filled (hover/disabled) cells. */
 :root {
+  color-scheme: light;
   --background: oklch(1 0 0);
   --foreground: oklch(0% 0 0);
   --card: oklch(1 0 0);
@@ -25,7 +26,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.45 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -50,6 +51,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

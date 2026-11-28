@@ -51,7 +51,10 @@ const dragPointer = async (page: Page, from: Point, to: Point) => {
  * pixels wide, so a press aimed at a half-faded, still-moving bar misses it.
  */
 const openSettled = async (page: Page, options: ScenarioOptions) => {
-	await gotoScenario(page, options)
+	await gotoScenario(page, {
+		...options,
+		settings: { editable: 'true', ...options.settings },
+	})
 	await page.evaluate(() =>
 		Promise.all(document.getAnimations().map((animation) => animation.finished))
 	)
@@ -210,7 +213,7 @@ test.describe('snapDuration in the horizontal resource timeline (#101)', () => {
 		page,
 	}) => {
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 
 		// 0.3 across the 13:00 column is minute 18: the 15-minute bucket.
 		await dragPointer(
@@ -230,7 +233,7 @@ test.describe('snapDuration in the horizontal resource timeline (#101)', () => {
 		page,
 	}) => {
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 
 		// 0.6 across the 11:00 column is minute 36: the 30-minute bucket, ending 11:45.
 		await dragPointer(
@@ -491,7 +494,7 @@ test.describe('the snapped preview follows the pointer between slices of one cel
 
 		await pressEnterSlide(
 			page,
-			await leftEdgeOf(page.getByTestId('horizontal-event-res-1')),
+			await leftEdgeOf(page.getByTestId('calendar-event-res-1')),
 			await pointIn(cell, 0.1, 0.5),
 			await pointIn(cell, 0.9, 0.5)
 		)
@@ -545,7 +548,7 @@ test.describe('the snapped preview follows the pointer between slices of one cel
 		await pressEnterSlide(
 			page,
 			await pointIn(
-				handleOf(page.getByTestId('horizontal-event-res-1'), 'end'),
+				handleOf(page.getByTestId('calendar-event-res-1'), 'end'),
 				0.5,
 				0.5
 			),
@@ -641,7 +644,7 @@ test.describe('the slot under the pointer, as the cells are drawn', () => {
 		await openSettled(page, options)
 		const first = await column.boundingBox()
 		const bar = await page
-			.getByTestId('vertical-event-sweep-1')
+			.getByTestId('calendar-event-sweep-1')
 			.first()
 			.boundingBox()
 		if (!(first && bar)) {
@@ -661,11 +664,18 @@ test.describe('the slot under the pointer, as the cells are drawn', () => {
 			await waitForDragRender(page)
 			const seen = await page.evaluate(
 				([px, py]) => {
-					const cell = document
+					const matchingCells = document
 						.elementsFromPoint(px, py)
-						.find((el) =>
-							(el as HTMLElement).dataset.testid?.startsWith('vertical-cell-')
-						) as HTMLElement | undefined
+						.filter((el): el is HTMLElement =>
+							Boolean(
+								(el as HTMLElement).dataset.testid?.startsWith('time-slot-')
+							)
+						)
+					const containing = matchingCells.filter((el) => {
+						const rect = el.getBoundingClientRect()
+						return rect.top <= py && py <= rect.bottom
+					})
+					const cell = containing.at(-1)
 					const lit = [
 						...document.querySelectorAll('[data-drop-target="true"]'),
 					]
@@ -712,7 +722,7 @@ test.describe('the slot under the pointer, as the cells are drawn', () => {
 				},
 				page
 					.locator(
-						'[data-testid^="vertical-cell-"][data-start^="2025-03-13T00:00"]'
+						'[data-ilamy-part="time-slot"][data-start^="2025-03-13T00:00"]'
 					)
 					.first()
 			)
@@ -737,7 +747,7 @@ test.describe('the slot under the pointer, as the cells are drawn', () => {
 				},
 				page
 					.locator(
-						'[data-testid^="vertical-cell-"][data-resource-id="r2"][data-start^="2025-03-12T00:00"]'
+						'[data-ilamy-part="time-slot"][data-resource-id="r2"][data-start^="2025-03-12T00:00"]'
 					)
 					.first()
 			)

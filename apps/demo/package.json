@@ -8,12 +8,11 @@
 		"dev": "bunx vite",
 		"build": "bunx vite build",
 		"preview": "bunx vite preview",
-		"type-check": "bunx tsc --noEmit"
+		"type-check": "bun check --no-script"
 	},
 	"dependencies": {
 		"@ilamy/calendar": "workspace:*",
 		"@ilamy/playground": "workspace:*",
-		"@ilamy/ui": "workspace:*",
 		"lucide-react": "^0.475.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0"

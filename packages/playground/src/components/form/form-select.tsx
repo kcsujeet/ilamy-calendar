@@ -4,7 +4,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@ilamy/ui/components/select'
+} from '../ui/select'
 import { useController, useFormContext } from 'react-hook-form'
 
 interface FormSelectOption {

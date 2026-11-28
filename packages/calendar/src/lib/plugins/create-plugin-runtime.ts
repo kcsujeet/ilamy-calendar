@@ -1,52 +1,77 @@
-import type { IlamyPlugin } from '@ilamy/types'
-import { overlapsRange } from '@ilamy/utils/helpers'
-import {
-	type ComponentType,
-	createElement,
-	Fragment,
-	type ReactNode,
-} from 'react'
-import type { PluginRuntime } from './types'
+import type {
+	CalendarEvent,
+	CalendarEventInput,
+} from '../../types/calendar.types'
+import type {
+	CalendarPlugin,
+	CalendarPluginView,
+	PluginDragToCreateConfig,
+	PluginRuntime,
+} from '../../types/plugin.types'
+import { overlapsRange, parseDate, resolveZone } from '../../utils/temporal'
 
-export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
-	// Sequential transform chain, then the core applies the range-overlap filter
-	// (the baseline every view expects) so plugins only worry about producing
-	// events, not range-trimming.
-	transformEvents: (events, range) => {
-		const transformed = plugins.reduce(
-			(acc, plugin) =>
-				plugin.transformEvents ? plugin.transformEvents(acc, range) : acc,
-			events
-		)
-		return transformed.filter((event) =>
-			overlapsRange(event, range.start, range.end)
-		)
-	},
+const EMPTY_PLUGINS: readonly CalendarPlugin[] = []
 
-	getEventManager: (event) =>
-		plugins.find((plugin) => plugin.managesEvent?.(event)),
+/**
+ * Aggregates framework-agnostic calendar plugins into a single runtime used by
+ * the headless controller, DOM renderer, and framework adapters.
+ */
+export const createPluginRuntime = (
+	plugins: readonly CalendarPlugin[] = EMPTY_PLUGINS
+): PluginRuntime => {
+	const views: CalendarPluginView[] = plugins.flatMap(
+		(plugin) => plugin.views ?? []
+	)
 
-	collect: (point, context) =>
-		plugins.flatMap((plugin) => plugin.contribute?.(point, context) ?? []),
+	return {
+		plugins,
 
-	// Every plugin may contribute to a slot. Each node is keyed by plugin name
-	// so consumers can render the returned array directly.
-	renderSlot: (slotName, context) => {
-		const nodes: ReactNode[] = []
-		for (const plugin of plugins) {
-			const node = plugin.renderSlot?.(slotName, context)
-			const isPresent = node !== null && node !== undefined
-			if (isPresent) {
-				nodes.push(createElement(Fragment, { key: plugin.name }, node))
+		transformEvents: (events, range) => {
+			const transformed = plugins.reduce(
+				(acc, plugin) =>
+					plugin.transformEvents ? plugin.transformEvents(acc, range) : acc,
+				events
+			)
+			const zone = resolveZone(range.timezone)
+			const rangeStart = parseDate(range.start, zone)
+			const rangeEnd = parseDate(range.end, zone)
+			if (!(rangeStart && rangeEnd)) {
+				return transformed
 			}
-		}
-		return nodes
-	},
+			return transformed.filter((event) => {
+				const start = parseDate(event.start, zone)
+				const end = parseDate(event.end, zone)
+				if (!(start && end)) {
+					return false
+				}
+				return overlapsRange({ start, end }, rangeStart, rangeEnd)
+			})
+		},
 
-	getViews: () => plugins.flatMap((plugin) => plugin.views ?? []),
+		normalizeEvent: (event: CalendarEventInput, timezone: string) =>
+			plugins.reduce(
+				(acc, plugin) =>
+					plugin.normalizeEvent ? plugin.normalizeEvent(acc, timezone) : acc,
+				event
+			),
 
-	getProviders: () =>
-		plugins
-			.map((plugin) => plugin.provider)
-			.filter((p): p is ComponentType<{ children: ReactNode }> => Boolean(p)),
-})
+		getEventManager: (event: CalendarEvent) =>
+			plugins.find((plugin) => plugin.managesEvent?.(event)),
+
+		collect: (point: string, context: unknown) =>
+			plugins.flatMap((plugin) => plugin.contribute?.(point, context) ?? []),
+
+		getViews: () => views,
+
+		getView: (name: string) => views.find((view) => view.name === name),
+
+		getDragToCreate: (): PluginDragToCreateConfig | undefined => {
+			for (const plugin of plugins) {
+				if (plugin.dragToCreate) {
+					return plugin.dragToCreate
+				}
+			}
+			return undefined
+		},
+	}
+}

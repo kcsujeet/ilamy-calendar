@@ -13,7 +13,7 @@ It works in the month, week, and day views, on both regular and resource calenda
 Import `dragToCreatePlugin` from the `@ilamy/calendar/plugins/drag-to-create` subpath and pass it to `plugins`:
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create';
 
 export default function MyCalendar() {
@@ -67,7 +67,7 @@ interface DragToCreateOptions {
     dragToCreatePlugin({
       onSelect: (selection, openEventForm) => {
         // Run your own logic, then open the form (or do something else entirely).
-        console.log('selected', selection.start.toISOString(), selection.end.toISOString());
+        console.log('selected', selection.start, selection.end);
         openEventForm({
           start: selection.start,
           end: selection.end,
@@ -84,10 +84,10 @@ interface DragToCreateOptions {
 
 ```ts
 interface CellInfo {
-  start: Dayjs;        // start of the selected range
-  end: Dayjs;          // end of the selected range
-  resource?: Resource; // the resource on a resource calendar; undefined otherwise
-  allDay?: boolean;    // true for a selection in the all-day row; false in the time grid and in month
+  start: IsoDateString; // start of the selected range
+  end: IsoDateString;   // end of the selected range
+  resource?: Resource;  // the resource on a resource calendar; undefined otherwise
+  allDay?: boolean;     // true in month view and the all-day row; false in time grids
 }
 ```
 
@@ -109,4 +109,4 @@ import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create';
 
 - The plugin is bundled into `@ilamy/calendar` and exposed at the `@ilamy/calendar/plugins/drag-to-create` subpath. There is no separate package to install.
 - Selection reuses the public `CellInfo` and `openEventForm`, so it stays consistent with `onCellClick` and the rest of the calendar API.
-- A selection in the month view reports `allDay: false` and opens a timed event in 3.x, the same as a month `onCellClick`. Read the `view` as well if you need to tell a month selection from a time-grid one.
+- Since v4.0, a selection in the month view reports `allDay: true` (matching FullCalendar's day grid).

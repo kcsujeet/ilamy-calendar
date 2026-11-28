@@ -10,9 +10,8 @@
   },
   "dependencies": {
     "@astrojs/react": "^5.0.6",
-    "@ilamy/calendar": "^1.7.0",
+    "@ilamy/calendar": "^4.0.0",
     "astro": "~7.2.10",
-    "dayjs": "^1.11.21",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "tailwindcss": "^4.3.0"

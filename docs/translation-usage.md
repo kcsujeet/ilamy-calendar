@@ -7,7 +7,8 @@ The calendar supports two flexible approaches for internationalization:
 Provide a complete translations object with all required keys:
 
 ```tsx
-import { IlamyCalendar, type Translations } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
+import type { Translations } from '@ilamy/calendar'
 
 // Create your own translations
 const myTranslations: Translations = {
@@ -40,7 +41,8 @@ If you only want to override a few labels (not fully localize), spread the
 exported defaults so you still satisfy the full type:
 
 ```tsx
-import { IlamyCalendar, defaultTranslations } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
+import { defaultTranslations } from '@ilamy/calendar'
 
 <IlamyCalendar
   events={events}
@@ -53,7 +55,8 @@ import { IlamyCalendar, defaultTranslations } from '@ilamy/calendar'
 Provide a function that handles translation logic:
 
 ```tsx
-import { IlamyCalendar, type TranslatorFunction } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
+import type { TranslatorFunction } from '@ilamy/calendar'
 
 // Simple key-based translator
 const translator: TranslatorFunction = (key) => {
@@ -77,12 +80,8 @@ const translator: TranslatorFunction = (key) => {
 
 ```tsx
 import { useState } from 'react'
-import {
-  IlamyCalendar,
-  defaultTranslations,
-  spanishTranslations,
-  type Translations,
-} from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
+import { defaultTranslations, type Translations } from '@ilamy/calendar'
 
 const MultiLanguageCalendar = () => {
   const [locale, setLocale] = useState('en')
@@ -113,7 +112,7 @@ const MultiLanguageCalendar = () => {
 
 ```tsx
 import { useTranslation } from 'react-i18next'
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 
 const I18nextCalendar = () => {
   const { t } = useTranslation('calendar')
@@ -136,15 +135,16 @@ const I18nextCalendarWithNamespace = () => {
 Any component rendered within the calendar can access the translation function:
 
 ```tsx
-import { useCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 
 const CustomHeader = () => {
-  const { t, currentDate } = useCalendarContext()
+  const { t, currentDate } = useIlamyCalendarContext()
+  const year = new Date(currentDate).getFullYear()
 
   return (
     <div>
       <h1>
-        {t('month')} {currentDate.format('YYYY')}
+        {t('month')} {year}
       </h1>
       <button>{t('today')}</button>
     </div>

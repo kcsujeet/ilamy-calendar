@@ -1,5 +1,10 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, releasePointer, setSettings } from '../support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	setSettings,
+	settleAnimations,
+} from '../support/harness'
 import { CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
 
 /**
@@ -73,7 +78,7 @@ test.describe('persona 1: shift planner (allDaySlot=false)', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { allDaySlot: 'false', scrollTime: '09:00' },
+			settings: { allDaySlot: 'false', scrollTime: '09:00', editable: 'true' },
 		})
 		const grid = new TimeGrid(page)
 		await expect(grid.allDayRow).toHaveCount(0)
@@ -98,7 +103,7 @@ test.describe('persona 1: shift planner (allDaySlot=false)', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'day',
-			settings: { allDaySlot: 'false', scrollTime: '09:00' },
+			settings: { allDaySlot: 'false', scrollTime: '09:00', editable: 'true' },
 		})
 		const grid = new TimeGrid(page)
 		await expect(grid.allDayRow).toHaveCount(0)
@@ -147,7 +152,7 @@ test.describe('persona 1: shift planner (allDaySlot=false)', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { allDaySlot: 'false', scrollTime: '00:00' },
+			settings: { allDaySlot: 'false', scrollTime: '00:00', editable: 'true' },
 		})
 		const grid = new TimeGrid(page)
 		await dragTo(
@@ -170,7 +175,11 @@ test.describe('persona 1: shift planner (allDaySlot=false)', () => {
 					scenario: 'resources',
 					view,
 					orientation,
-					settings: { allDaySlot: 'false', scrollTime: '08:00' },
+					settings: {
+						allDaySlot: 'false',
+						scrollTime: '08:00',
+						editable: 'true',
+					},
 				})
 				const grid = new TimeGrid(page)
 				await expect(grid.allDayRow).toHaveCount(0)
@@ -464,7 +473,7 @@ test.describe('persona 2: European planner (ISO, Monday, weekNumbers)', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
-			settings: EU,
+			settings: { ...EU, editable: 'true' },
 		})
 		const month = new MonthGrid(page)
 		// Monday-start rows: 10 March is the first cell of its row, where the
@@ -493,7 +502,7 @@ test.describe('persona 2: European planner (ISO, Monday, weekNumbers)', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
-			settings: EU,
+			settings: { ...EU, editable: 'true' },
 		})
 		const month = new MonthGrid(page)
 		const cell = month.cellOn('2025-03-17')
@@ -514,7 +523,7 @@ test.describe('persona 2: European planner (ISO, Monday, weekNumbers)', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
-			settings: EU,
+			settings: { ...EU, editable: 'true' },
 		})
 		const month = new MonthGrid(page)
 		const numberBox = await month.weekNumbers.nth(1).boundingBox()
@@ -537,7 +546,7 @@ test.describe('persona 2: European planner (ISO, Monday, weekNumbers)', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
-			settings: EU,
+			settings: { ...EU, editable: 'true' },
 		})
 		const month = new MonthGrid(page)
 		await expect(month.weekNumbers.first()).toBeVisible()
@@ -582,7 +591,7 @@ test.describe('persona 2: European planner (ISO, Monday, weekNumbers)', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
-			settings: EU,
+			settings: { ...EU, editable: 'true' },
 		})
 		const month = new MonthGrid(page)
 		const number = await month.weekNumbers.first().boundingBox()
@@ -723,10 +732,8 @@ const measure = (
 	hour: string
 ) =>
 	page.evaluate(
-		({ scrollTestId, axis, hour }) => {
-			const viewport = document.querySelector(
-				`[data-testid="${scrollTestId}"] [data-radix-scroll-area-viewport]`
-			)
+		({ axis, hour }) => {
+			const viewport = document.querySelector('[data-ilamy-slot="grid-scroll"]')
 			const first = viewport?.querySelector('[data-hour]')
 			const row = viewport?.querySelector(`[data-hour="${hour}"]`)
 			if (!viewport || !first || !row) {
@@ -741,7 +748,7 @@ const measure = (
 				extent: vertical ? b.height : b.width,
 			}
 		},
-		{ scrollTestId, axis, hour }
+		{ axis, hour }
 	)
 
 test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
@@ -797,9 +804,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			'13'
 		)
 		const maxScroll = await page.evaluate(() => {
-			const v = document.querySelector(
-				'[data-testid="horizontal-grid-scroll"] [data-radix-scroll-area-viewport]'
-			)
+			const v = document.querySelector('[data-ilamy-slot="grid-scroll"]')
 			return v ? v.scrollWidth - v.clientWidth : 0
 		})
 		// 13:45 is past the end of what the 1280px viewport can scroll, so the
@@ -826,7 +831,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			'13'
 		)
 		await grid.next()
-		await page.waitForTimeout(700)
+		await settleAnimations(page)
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 		const afterNext = await measure(
 			page,
@@ -835,7 +840,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			'13'
 		)
 		await grid.previous()
-		await page.waitForTimeout(700)
+		await settleAnimations(page)
 		const afterPrev = await measure(
 			page,
 			'vertical-grid-scroll',
@@ -907,15 +912,15 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 		expect(errors).toEqual([])
 	})
 
-	test('toggling nowIndicator at runtime removes and restores the line', async ({
+	test('toggling nowIndicator at runtime shows and removes the line (D3 default false)', async ({
 		page,
 	}) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'week' })
-		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
-		await setSettings(page, { nowIndicator: 'false' })
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 		await setSettings(page, { nowIndicator: 'true' })
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
+		await setSettings(page, { nowIndicator: 'false' })
+		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 	})
 
 	for (const time of ['00:00', '23:59', '12:59', '08:15']) {
@@ -936,9 +941,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			)
 			const ideal = rowStart + (m / 60) * extent
 			const maxScroll = await page.evaluate(() => {
-				const v = document.querySelector(
-					'[data-testid="vertical-grid-scroll"] [data-radix-scroll-area-viewport]'
-				)
+				const v = document.querySelector('[data-ilamy-slot="grid-scroll"]')
 				return v ? v.scrollHeight - v.clientHeight : 0
 			})
 			expect(
@@ -962,10 +965,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			},
 		})
 		const scrolled = await page.evaluate(
-			() =>
-				document.querySelector(
-					'[data-testid="vertical-grid-scroll"] [data-radix-scroll-area-viewport]'
-				)?.scrollTop
+			() => document.querySelector('[data-ilamy-slot="grid-scroll"]')?.scrollTop
 		)
 		expect(scrolled).toBe(0)
 		expect(errors).toEqual([])
@@ -975,21 +975,21 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 /* ---------------------------------------------------------------------- */
 /* Persona 4: upgrader, none of the new params                             */
 /* ---------------------------------------------------------------------- */
-test.describe('persona 4: upgrader (no new params)', () => {
-	test('week: week number, now line and all-day row all present', async ({
+test.describe('persona 4: defaults (no new params)', () => {
+	test('week: week number and all-day row present, now line off by default (D3)', async ({
 		page,
 	}) => {
 		await gotoScenario(page, { scenario: 'all-day-events', view: 'week' })
 		await expect(page.getByTestId('week-number')).toHaveText('11')
-		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
+		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 		await expect(new TimeGrid(page).allDayRow).toHaveCount(1)
 	})
 
-	test('day: now line and all-day row present, month: no week numbers', async ({
+	test('day: all-day row present and now line off by default (D3), month: no week numbers', async ({
 		page,
 	}) => {
 		await gotoScenario(page, { scenario: 'all-day-events', view: 'day' })
-		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
+		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 		await expect(new TimeGrid(page).allDayRow).toHaveCount(1)
 		await gotoScenario(page, { scenario: 'all-day-events', view: 'month' })
 		await expect(new MonthGrid(page).weekNumbers).toHaveCount(0)
@@ -1004,7 +1004,7 @@ test.describe('persona 4: upgrader (no new params)', () => {
 			orientation: 'vertical',
 		})
 		await expect(page.getByTestId('week-number')).toHaveCount(1)
-		await expect(page.getByTestId('current-time-indicator')).not.toHaveCount(0)
+		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 		await expect(
 			page.locator('[data-testid^="allday-row"], [data-testid="all-day-row"]')
 		).not.toHaveCount(0)
@@ -1019,13 +1019,13 @@ test.describe('persona 4: upgrader (no new params)', () => {
 				view: 'week',
 				settings,
 			})
-			await page.waitForTimeout(800)
+			await settleAnimations(page)
 			return page.getByTestId('ilamy-calendar').evaluate((el) => el.outerHTML)
 		}
 		const bare = await html({})
 		const explicit = await html({
 			allDaySlot: 'true',
-			nowIndicator: 'true',
+			nowIndicator: 'false',
 			weekNumberCalculation: 'local',
 		})
 		expect(explicit).toBe(bare)
